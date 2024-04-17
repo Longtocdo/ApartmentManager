@@ -2,6 +2,30 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from ckeditor.fields import RichTextField
 from cloudinary.models import CloudinaryField
+from enum import Enum
+from django_enum_choices.fields import EnumChoiceField
+
+
+class EnumRole(Enum):
+    Resident = 'Resident'
+    Manager = 'Manager'
+
+
+class BaseUser(AbstractUser):
+    avatar = CloudinaryField(null=True)
+    role = EnumChoiceField(EnumRole)
+
+    class Meta:
+        abstract = True
+
+
+# class Resident(BaseUser):
+#     pass
+
+
+
+
+
 
 
 class User(AbstractUser):
