@@ -4,29 +4,27 @@ from ckeditor.fields import RichTextField
 from cloudinary.models import CloudinaryField
 from enum import Enum
 from django_enum_choices.fields import EnumChoiceField
+from django.utils.translation import gettext_lazy as _
 
 
-class EnumRole(Enum):
-    Resident = 'Resident'
-    Manager = 'Manager'
-
+class EnumRole(models.TextChoices):
+    RESIDENT = 'Resident'
+    MANAGER = 'Manager'
 
 class BaseUser(AbstractUser):
-    avatar = CloudinaryField(null=True)
-    role = EnumChoiceField(EnumRole)
+    avatar = models.ImageField(null=True)
+    role = models.CharField(max_length=20, choices=EnumRole.choices, default=EnumRole.RESIDENT)
 
     class Meta:
         abstract = True
 
 
-# class Resident(BaseUser):
-#     pass
 
-
-
-
-
-
+class Resident(BaseUser):
+    id = models.AutoField(primary_key=True)
+    nha = models.CharField(max_length=50)
+    groups = models.ManyToManyField('auth.Group', related_name='resident_groups')
+    user_permissions = models.ManyToManyField('auth.Permission', related_name='resident_user_permissions')
 
 class User(AbstractUser):
     avatar = CloudinaryField(null=True)

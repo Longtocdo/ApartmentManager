@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.template.response import TemplateResponse
 from django.utils.html import mark_safe
-from apartment.models import Category, Course, Lesson, User, Tag, Comment, Like
+from apartment.models import Category, Course, Lesson, User, Tag, Comment, Like,Resident
 from django import forms
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django.urls import path
@@ -61,3 +61,4 @@ admin_site.register(User)
 admin_site.register(Tag)
 admin_site.register(Comment)
 admin_site.register(Like)
+admin_site.register(Resident)
