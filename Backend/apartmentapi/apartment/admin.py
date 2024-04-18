@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.template.response import TemplateResponse
 from django.utils.html import mark_safe
-from apartment.models import Category, Course, Lesson, User, Tag, Comment, Like,Resident
+from apartment.models import Category, Course, Lesson, User, Tag, Comment, Like,Resident,MonthlyFee,Manager,Apartment,Vehicle,ReservationVehicle,ResidentFee,ElectronicLockerItem,Item,Survey,Question,Answer,Choice,Response
 from django import forms
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django.urls import path
@@ -54,11 +54,27 @@ class MyCourseAdmin(admin.ModelAdmin):
         }
 
 
-admin_site.register(Category)
-admin_site.register(Course, MyCourseAdmin)
-admin_site.register(Lesson)
-admin_site.register(User)
-admin_site.register(Tag)
-admin_site.register(Comment)
-admin_site.register(Like)
+# admin_site.register(Category)
+# admin_site.register(Course, MyCourseAdmin)
+# admin_site.register(Lesson)
+# admin_site.register(User)
+# admin_site.register(Tag)
+# admin_site.register(Comment)
+# admin_site.register(Like)
 admin_site.register(Resident)
+admin_site.register(MonthlyFee)
+admin_site.register(Manager)
+admin_site.register(Apartment)
+admin_site.register(Vehicle)
+admin_site.register(ReservationVehicle)
+admin_site.register(ResidentFee)
+admin_site.register(ElectronicLockerItem)
+admin_site.register(Item)
+admin_site.register(Survey)
+admin_site.register(Question)
+admin_site.register(Choice)
+admin_site.register(Response)
+
+
+
+
