@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Apartment(models.Model):
+
     class EnumRoom(models.IntegerChoices):
         ROOM_1 = 1, 'Room 1'
         ROOM_2 = 2, 'Room 2'
@@ -54,9 +55,9 @@ class Manager(models.Model):
     area = models.CharField(max_length = 20, null = True)
 
 
-class BaseService(models.Model):
-    name = models.CharField(max_length= 30, primary_key = True)
-    description= models.TextField(max_length=50)
+class BaseModel(models.Model):
+    name = models.CharField(max_length= 30)
+    description= models.TextField(max_length=50, null = True)
     created_date = models.DateTimeField(auto_now_add=True, null=True)
     updated_date = models.DateTimeField(auto_now=True, null=True)
 
@@ -64,74 +65,74 @@ class BaseService(models.Model):
          abstract = True
 
 
-class MonthlyFee(BaseService):
+class MonthlyFee(BaseModel):
     price = models.IntegerField()
     residents = models.ManyToManyField(Resident,through='ResidentFee')
 
 
-class Vehicle(BaseService):
+class Vehicle(BaseModel):
     price = models.IntegerField()
 
 
 class ReservationVehicle(MonthlyFee):
-    vehicle = models.ForeignKey(Vehicle, on_delete = models.CASCADE)
+
+    class EnumStatus(models.TextChoices):
+        PENDING = 'Đang chờ xử lý'
+        DENY = 'Không thể xử lý'
+        DONE = 'Đã đăng ký'
+
+    name = models.CharField(max_length= 30, primary_key = True, default = 'Đăng ký giữ xe')
     vehicle_number = models.CharField(max_length=10)
+    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
 
-
+    vehicle = models.ForeignKey(Vehicle, on_delete = models.CASCADE)
 
 
 class ResidentFee(models.Model):
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
-    fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE)
-
     payment_method = models.CharField(max_length=50)
     payment_proof = CloudinaryField(null=True)
     payment_date = models.DateField(auto_now_add=True)
     status= models.BooleanField(default = False)
     amount = models.IntegerField(default=1)
 
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
+    fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE)
 
-class ElectronicLockerItem(models.Model):
-    resident = models.OneToOneField(Resident, related_name='resident', null=False, primary_key=True, on_delete=models.CASCADE)
+
+class ElectronicLockerItem(BaseModel):
+    name = models.CharField(max_length= 30,default = 'Tủ đồ')
     status = models.BooleanField(default = False)
 
+    apartment = models.OneToOneField(Apartment, related_name='apartment', null=False, primary_key=True, on_delete=models.CASCADE)
 
 
-class Item(models.Model):
-    name = models.CharField(max_length = 20)
-    created_date = models.DateTimeField(auto_now_add=True, null=True)
+class Item(BaseModel):
     status = models.BooleanField(default = True)
 
     electronic_lock = models.ForeignKey(ElectronicLockerItem, on_delete = models.CASCADE)
 
 
-
-
-
-
-
-class Survey(models.Model):
-    title = models.CharField(max_length=100)
-    description = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True, null = True)
+class Survey(BaseModel):
+    tittle = models.CharField(max_length=30, primary_key=True)
+    data_expire = models.DateField()
+    status = models.BooleanField(default = False)
 
     def __str__(self):
         return self.title
 
-class Question(models.Model):
+class Question(BaseModel):
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
-    text = models.TextField()
 
-    def __str__(self):
-        return self.text
+    content = models.CharField(max_length=30, primary_key=True)
 
-class Choice(models.Model):
+
+class Choice(BaseModel):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    text = models.CharField(max_length=100)
+
+    content = models.CharField(max_length=30, primary_key=True)
     letter = models.CharField(max_length=1, help_text="A, B, C, D")
 
-    def __str__(self):
-        return f"{self.letter}: {self.text}"
+
 
 class Response(models.Model):
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
@@ -148,6 +149,31 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"{self.question.text} - {self.choice.letter}"
+
+class ReflectionForm(BaseModel):
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=30, primary_key=True)
+    content = models.TextField(max_length=50, null=True)
+    status = models.BooleanField(defautl = False)
+
+class RepairServices(BaseModel):
+
+    class EnumStatus(models.TextChoices):
+        PENDING = 'Đang chờ xử lý'
+        DENY = 'Không thể xử lý'
+        DONE = 'Đã xử lý'
+
+
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
+
+    content = models.TextField(max_length=50, null=True)
+    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
+
+
+
+
+
 
 
 
