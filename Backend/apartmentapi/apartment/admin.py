@@ -3,11 +3,12 @@ from django.contrib import admin
 from django.db.models import Count
 from django.template.response import TemplateResponse
 from django.utils.html import mark_safe
-from apartment.models import Category, Course, Lesson, User, Tag, Comment, Like,Resident,MonthlyFee,Manager,Apartment,Vehicle,ReservationVehicle,ResidentFee,ElectronicLockerItem,Item,Survey,Question,Answer,Choice,Response
+from apartment.models import Resident,MonthlyFee,Manager,Apartment,Vehicle,ReservationVehicle,ResidentFee,ElectronicLockerItem,Item,Survey,Question,Answer,Choice,Response
 from django import forms
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django.urls import path
 
+# Category, Course, Lesson, User, Tag, Comment, Like,
 
 class MyCourseAdminSite(admin.AdminSite):
     site_header = 'eCourseOnline'
@@ -24,35 +25,35 @@ class MyCourseAdminSite(admin.AdminSite):
 
 admin_site = MyCourseAdminSite(name='iCourse')
 
-
-class CourseForm(forms.ModelForm):
-    description = forms.CharField(widget=CKEditorUploadingWidget)
-
-    class Meta:
-        model = Course
-        fields = '__all__'
-
-
-class MyCourseAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'created_date', 'updated_date', 'active']
-    search_fields = ['name', 'description']
-    list_filter = ['id', 'created_date', 'name']
-    readonly_fields = ['my_image']
-    form = CourseForm
-
-
-    def my_image(self, instance):
-        if instance:
-            if instance.image is cloudinary.CloudinaryResource:
-                return mark_safe(f"<img width='120' src='{instance.image.url}' />")
-
-            return mark_safe(f"<img width='120' src='/static/{instance.image.name}' />")
-
-    class Media:
-        css = {
-            'all': ('/static/css/style.css', )
-        }
-
+#
+# class CourseForm(forms.ModelForm):
+#     description = forms.CharField(widget=CKEditorUploadingWidget)
+#
+#     class Meta:
+#         model = Course
+#         fields = '__all__'
+#
+#
+# class MyCourseAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'name', 'created_date', 'updated_date', 'active']
+#     search_fields = ['name', 'description']
+#     list_filter = ['id', 'created_date', 'name']
+#     readonly_fields = ['my_image']
+#     form = CourseForm
+#
+#
+#     def my_image(self, instance):
+#         if instance:
+#             if instance.image is cloudinary.CloudinaryResource:
+#                 return mark_safe(f"<img width='120' src='{instance.image.url}' />")
+#
+#             return mark_safe(f"<img width='120' src='/static/{instance.image.name}' />")
+#
+#     class Media:
+#         css = {
+#             'all': ('/static/css/style.css', )
+#         }
+#
 
 # admin_site.register(Category)
 # admin_site.register(Course, MyCourseAdmin)
