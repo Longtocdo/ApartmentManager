@@ -43,8 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apartment',
-    'ckeditor',
-    'ckeditor_uploader',
+    # 'ckeditor',
+    # 'ckeditor_uploader',
     'rest_framework',
     'drf_yasg',
     'oauth2_provider'
@@ -56,7 +56,7 @@ REST_FRAMEWORK = {
     )
 }
 
-CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
+# CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
 
 AUTH_USER_MODEL = 'apartment.User'
 
@@ -98,7 +98,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'apartmentdb',
         'USER': 'root',
-        'PASSWORD': 'Sang@150203',
+        'PASSWORD': 'prolaanh00',
         'HOST': ''  # mặc định localhost
     }
 }

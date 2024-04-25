@@ -4,11 +4,15 @@ from rest_framework import routers
 from apartment import views
 
 r = routers.DefaultRouter()
-# r.register('categories', views.CategoryViewSet, basename='categories')
-# r.register('apartment', views.CourseViewSet, basename='apartment')
-# r.register('lessons', views.LessonViewSet, basename='lessons')
-# r.register('users', views.UserViewSet, basename='users')
-# r.register('comments', views.CommentViewSet, basename='comments')
+r.register('residentfee', views.ResidentFeeViewSet, basename='residentfee')
+r.register('apartment', views.ApartmentViewSet, basename='apartment')
+r.register('residents', views.ResidentViewSet, basename='residents')
+r.register('users', views.UserViewSet, basename='users')
+r.register('monthlyfee', views.MonthlyFeeViewSet, basename='monthlyfee')
+r.register('electroniclocker', views.ElectronicLockerViewSet, basename='electroniclocker')
+r.register('reflection', views.ReflectionViewSet, basename='reflection')
+r.register('item', views.ItemViewSet, basename='item')
+
 
 urlpatterns = [
     path('', include(r.urls))

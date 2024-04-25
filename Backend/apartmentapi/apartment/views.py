@@ -1,15 +1,93 @@
-# from rest_framework import viewsets, generics, status, parsers, permissions
-# from rest_framework.decorators import action
-# from rest_framework.response import Response
-# from apartment import serializers, paginators, perms
-# from apartment.models import Category, Course, Lesson, User, Comment, Like
-#
-#
-# class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
-#     queryset = Category.objects.filter(active=True)
-#     serializer_class = serializers.CategorySerializer
-#
-#
+from rest_framework import viewsets, generics, status, parsers, permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from apartment import serializers, paginators, perms
+from apartment.models import ResidentFee, User, ElectronicLockerItem, Item, MonthlyFee, ReflectionForm, Resident, \
+    Apartment, Survey, Answer, Vehicle, \
+    ReservationVehicle
+
+
+class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = ResidentFee.objects.filter(status=True)
+    serializer_class = serializers.ResidentFeeSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        if self.action.__eq__('list'):
+            q = self.request.query_params.get('q')
+            if q:
+                queryset = queryset.filter(resident_id=q)
+        return queryset
+
+    # @action(methods=['get'], url_path='resident', detail=True)
+    # def get_residents(self, request, pk):
+    #     residents = self.get_object().resident_set.filter(status=True)
+    #
+    #     rd_id = request.query_params.get('id')
+    #     if rd_id:
+    #         residents = rd_id.filter(user_infor=rd_id)
+    #
+    #     return Response(serializers.ResidentFeeSerializer(residents, many=True).data,
+    #                     status=status.HTTP_200_OK)
+
+
+class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Resident.objects.all()
+    serializer_class = serializers.ResidentSerializer
+
+
+class MonthlyFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = MonthlyFee.objects.all()
+    serializer_class = serializers.MonthlyFeeSerializer
+
+
+class ReflectionViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView):
+    # giong nhu comment
+    queryset = ReflectionForm.objects.all()
+    serializer_class = serializers.ReflectionSerializer
+    permission_classes = [perms.ReflectionOwner]
+
+
+class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = ElectronicLockerItem.objects.filter(status=True)
+    serializer_class = serializers.ElectronicLockerSerializer
+
+    #     course
+    @action(methods=['get'], url_path='items', detail=True)
+    def get_items(self, request, pk):
+        items = self.get_object().item_set.filter(status=True)
+
+        q = request.query_params.get('q')
+        if q:
+            items = items.filter(name__icontains=q)
+
+        return Response(serializers.ItemSerializer(items, many=True).data,
+                        status=status.HTTP_200_OK)
+
+
+class ApartmentViewSet(viewsets.ViewSet, generics.ListAPIView):
+    # lesson
+    queryset = Item.objects.all()
+    serializer_class = serializers.ApartmentSerializer
+
+
+class ItemViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
+    # lesson
+    queryset = Item.objects.all()
+    serializer_class = serializers.ItemSerializer
+
+    # def get_queryset(self):
+    #     queryset = self.queryset
+    #
+    #     if self.action.__eq__('list'):
+    #         q = self.request.query_params.get('q')
+    #         if q:
+    #             queryset = queryset.filter(name__icontains=q)
+    #
+    #     return queryset
+
+
 # class CourseViewSet(viewsets.ViewSet, generics.ListAPIView):
 #     queryset = Course.objects.filter(active=True)
 #     serializer_class = serializers.CourseSerializer
@@ -39,7 +117,7 @@
 #
 #         return Response(serializers.LessonSerializer(lessons, many=True).data,
 #                         status=status.HTTP_200_OK)
-#
+
 #
 # class LessonViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
 #     queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
@@ -86,29 +164,28 @@
 #         return Response(serializers.AuthenticatedLessonDetailsSerializer(self.get_object()).data)
 #
 #
-#
-# class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
-#     queryset = User.objects.filter(is_active=True)
-#     serializer_class = serializers.UserSerializer
-#     parser_classes = [parsers.MultiPartParser, ]
-#
-#     def get_permissions(self):
-#         if self.action in ['get_current_user']:
-#             return [permissions.IsAuthenticated()]
-#
-#         return [permissions.AllowAny()]
-#
-#     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
-#     def get_current_user(self, request):
-#         user = request.user
-#         if request.method.__eq__('PATCH'):
-#             for k, v in request.data.items():
-#                 setattr(user, k, v)
-#             user.save()
-#
-#         return Response(serializers.UserSerializer(user).data)
-#
-#
+
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = User.objects.filter(is_active=True)
+    serializer_class = serializers.UserSerializer
+    parser_classes = [parsers.MultiPartParser, ]
+
+    def get_permissions(self):
+        if self.action in ['get_current_user']:
+            return [permissions.IsAuthenticated()]
+
+        return [permissions.AllowAny()]
+
+    @action(methods=['get', 'patch'], url_path='current-user', detail=False)
+    def get_current_user(self, request):
+        user = request.user
+        if request.method.__eq__('PATCH'):
+            for k, v in request.data.items():
+                setattr(user, k, v)
+            user.save()
+
+        return Response(serializers.UserSerializer(user).data)
+
 # class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView):
 #     queryset = Comment.objects.all()
 #     serializer_class = serializers.CommentSerializer

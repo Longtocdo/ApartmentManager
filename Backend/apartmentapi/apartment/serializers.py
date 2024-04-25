@@ -1,11 +1,53 @@
-# from rest_framework import serializers
-# from apartment.models import Category, Course, Lesson, Tag, User, Comment
-#
-#
-# class CategorySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Category
-#         fields = '__all__'
+from rest_framework import serializers
+from apartment.models import ResidentFee, MonthlyFee, Resident, ElectronicLockerItem, Item, Apartment, ReflectionForm, \
+    Survey, Answer, Vehicle, ReservationVehicle, \
+    Response, User, Question
+
+
+class ResidentFeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResidentFee
+        fields = '__all__'
+
+
+class MonthlyFeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MonthlyFee
+        fields = '__all__'
+
+
+class ResidentSerializer(serializers.ModelSerializer):
+    monthly_fees = MonthlyFeeSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Resident
+        fields = ['user_infor_id', 'monthly_fees']
+
+
+class ReflectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReflectionForm
+        fields = '__all__'
+
+
+class ElectronicLockerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ElectronicLockerItem
+        fields = '__all__'
+
+
+class ItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+
+class ApartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Apartment
+        fields = '__all__'
+
+
 #
 #
 # class ItemSerializer(serializers.ModelSerializer):
@@ -53,30 +95,25 @@
 #         fields = LessonDetailsSerializer.Meta.fields + ['liked']
 #
 #
-# class UserSerializer(serializers.ModelSerializer):
-#     def to_representation(self, instance):
-#         rep = super().to_representation(instance)
-#         rep['avatar'] = instance.avatar.url
-#
-#         return rep
-#
-#     def create(self, validated_data):
-#         data = validated_data.copy()
-#
-#         user = User(**data)
-#         user.set_password(data["password"])
-#         user.save()
-#
-#         return user
-#
-#     class Meta:
-#         model = User
-#         fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'avatar']
-#         extra_kwargs = {
-#             'password': {
-#                 'write_only': True
-#             }
-#         }
+class UserSerializer(serializers.ModelSerializer):
+
+    def create(self, validated_data):
+        data = validated_data.copy()
+
+        user = User(**data)
+        user.set_password(data["password"])
+        user.save()
+
+        return user
+
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password']
+        extra_kwargs = {
+            'password': {
+                'write_only': True
+            }
+        }
 #
 #
 # class CommentSerializer(serializers.ModelSerializer):
