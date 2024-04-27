@@ -20,21 +20,26 @@ class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
                 queryset = queryset.filter(resident_id=q)
         return queryset
 
-    # @action(methods=['get'], url_path='resident', detail=True)
-    # def get_residents(self, request, pk):
-    #     residents = self.get_object().resident_set.filter(status=True)
-    #
-    #     rd_id = request.query_params.get('id')
-    #     if rd_id:
-    #         residents = rd_id.filter(user_infor=rd_id)
-    #
-    #     return Response(serializers.ResidentFeeSerializer(residents, many=True).data,
-    #                     status=status.HTTP_200_OK)
 
-
-class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView):
+class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView,generics.RetrieveAPIView):
     queryset = Resident.objects.all()
     serializer_class = serializers.ResidentSerializer
+
+    @action(methods=['get'], url_path='residentfees', detail=True)
+    def get_residentfees(self, request,pk):
+        residentfees = self.get_object().residentfee_set.filter(status=True)
+
+        q = request.query_params.get('q')
+        if q:
+            residentfees = residentfees.filter(id=q)
+
+        return Response(serializers.ResidentFeeSerializer(residentfees, many=True).data, status=status.HTTP_200_OK)
+
+    @action(methods=['post'], url_path='reflectionform', detail=True)
+    def add_reflection(self, request, pk):
+        rf = self.get_object().reflection_set.create(content=request.data.get('content'),
+                                                     user=request.user)
+        return Response(serializers.ReflectionSerializer(rf).data, status=status.HTTP_201_CREATED)
 
 
 class MonthlyFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -42,11 +47,13 @@ class MonthlyFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = serializers.MonthlyFeeSerializer
 
 
-class ReflectionViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView):
+class ReflectionViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView,generics.CreateAPIView):
     # giong nhu comment
     queryset = ReflectionForm.objects.all()
     serializer_class = serializers.ReflectionSerializer
     permission_classes = [perms.ReflectionOwner]
+
+
 
 
 class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -55,7 +62,7 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
 
     #     course
     @action(methods=['get'], url_path='items', detail=True)
-    def get_items(self, request, pk):
+    def get_items(self, request):
         items = self.get_object().item_set.filter(status=True)
 
         q = request.query_params.get('q')
@@ -177,7 +184,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         return [permissions.AllowAny()]
 
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
-    def get_current_user(self, request):
+    def get_current_user(self, request,pk):
         user = request.user
         if request.method.__eq__('PATCH'):
             for k, v in request.data.items():

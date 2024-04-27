@@ -3,8 +3,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.template.response import TemplateResponse
 from django.utils.html import mark_safe
-from apartment.models import Resident, MonthlyFee, Manager, Apartment,User, Vehicle, ReservationVehicle, ResidentFee, \
-    ElectronicLockerItem, Item, Survey, Question, Answer, Choice, Response
+from apartment.models import *
 from django import forms
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django.urls import path
@@ -77,3 +76,4 @@ admin_site.register(Survey)
 admin_site.register(Question)
 admin_site.register(Choice)
 admin_site.register(Response)
+admin_site.register(ReflectionForm)
