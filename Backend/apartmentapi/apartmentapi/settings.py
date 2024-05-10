@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +26,7 @@ SECRET_KEY = 'django-insecure-aa$3sc8quxnhel+xv)^gyjje5ez123w3&431*erx19o=d&akid
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [] #'192.168.1.74'
+ALLOWED_HOSTS = []  # '192.168.1.74'
 
 import pymysql
 
@@ -57,6 +56,8 @@ REST_FRAMEWORK = {
 }
 
 # CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
+Client_id = 'B4AiBktDgat7mopb9la0DTltAjLZUx9ad49rwqYu'
+Client_secret = 'UU9ptwUBvT3wWa4jSB5Tl4k0r3hBuB7epFOObdGzAROK8S6Mf5EeHQmPzsDpmATauFjSX0NzLzjovAgIAOMQkov6UP5HJvjg1eKDvNw8hnm4LXl8EdsdEdQzGdC3G362'
 
 AUTH_USER_MODEL = 'apartment.User'
 
@@ -102,6 +103,7 @@ DATABASES = {
         'HOST': ''  # mặc định localhost
     }
 }
+ALLOWED_HOSTS = ['192.168.1.109']
 
 import cloudinary
 

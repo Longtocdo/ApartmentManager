@@ -7,7 +7,7 @@ from apartment.models import ResidentFee, MonthlyFee, Resident, ElectronicLocker
 class ResidentFeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResidentFee
-        fields = '__all__'
+        fields = ['resident', 'fee', 'amount', 'payment_date', 'payment_method']
 
 
 class MonthlyFeeSerializer(serializers.ModelSerializer):
@@ -21,13 +21,7 @@ class ResidentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resident
-        fields = ['user_infor_id', 'monthly_fees']
-
-
-class ReflectionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ReflectionForm
-        fields = '__all__'
+        fields = ['user_infor', 'apartment', 'monthly_fees']
 
 
 class ElectronicLockerSerializer(serializers.ModelSerializer):
@@ -48,33 +42,6 @@ class ApartmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-#
-#
-# class ItemSerializer(serializers.ModelSerializer):
-#     def to_representation(self, instance):
-#         rep = super().to_representation(instance)
-#         rep['image'] = instance.image.url
-#
-#         return rep
-#
-#
-# class TagSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Tag
-#         fields = ['id', 'name']
-#
-#
-# class CourseSerializer(ItemSerializer):
-#     class Meta:
-#         model = Course
-#         fields = ['id', 'name', 'image', 'created_date', 'updated_date', 'category']
-#
-#
-# class LessonSerializer(ItemSerializer):
-#     class Meta:
-#         model = Lesson
-#         fields = ['id', 'subject', 'image', 'created_date', 'updated_date']
-#
 #
 # class LessonDetailsSerializer(LessonSerializer):
 #     tags = TagSerializer(many=True)
@@ -114,6 +81,26 @@ class UserSerializer(serializers.ModelSerializer):
                 'write_only': True
             }
         }
+
+
+class VehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = '__all__'
+
+
+class ReservationVehicleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ReservationVehicle
+        fields = ['resident_reservation', 'reservation_vehicles', 'reservation_name', 'vehicle_number']
+        # fields = '__all__'
+
+
+class ReflectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReflectionForm
+        fields = ['resident', 'tittle', 'content']
 #
 #
 # class CommentSerializer(serializers.ModelSerializer):

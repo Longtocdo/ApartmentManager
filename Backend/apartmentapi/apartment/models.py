@@ -20,6 +20,9 @@ class Apartment(models.Model):
     def management_fee(self):
         return self.management_service.price * self.room
 
+    def __str__(self):
+        return self.name
+
 
 class User(AbstractUser):
     class EnumRole(models.TextChoices):
@@ -42,18 +45,24 @@ class User(AbstractUser):
 
 
 class Resident(models.Model):
-    user_infor = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
+    user_infor = models.OneToOneField(User, related_name='Resident', primary_key=True, on_delete=models.CASCADE,
+                                      null=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return "RD" + self.user_infor.first_name + " " + self.user_infor.last_name
 
 
 class Manager(models.Model):
-    user_infor = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
+    user_infor = models.OneToOneField(User, related_name='Manager', primary_key=True, null=False,
+                                      on_delete=models.CASCADE)
     area = models.CharField(max_length=20, null=True)
+
+    def __str__(self):
+        return "Mn." + self.user_infor.first_name + " " + self.user_infor.last_name
 
 
 class BaseModel(models.Model):
-    name = models.CharField(max_length=30)
-    description = models.TextField(max_length=50, null=True)
     created_date = models.DateTimeField(auto_now_add=True, null=True)
     updated_date = models.DateTimeField(auto_now=True, null=True)
 
@@ -66,22 +75,32 @@ class MonthlyFee(BaseModel):
     price = models.IntegerField()
     residents = models.ManyToManyField(Resident, through='ResidentFee')
 
+    def __str__(self):
+        return self.fee_name
+
 
 class Vehicle(BaseModel):
-    price = models.IntegerField()
+    name = models.CharField(max_length=255, null=False)
+    price = models.IntegerField(default=1000)
+
+    def __str__(self):
+        return self.name
 
 
-class ReservationVehicle(MonthlyFee):
+class ReservationVehicle(BaseModel):
     class EnumStatus(models.TextChoices):
         PENDING = 'Đang chờ xử lý'
         DENY = 'Không thể xử lý'
         DONE = 'Đã đăng ký'
 
-    reservation_name = models.CharField(max_length=30, primary_key=True, default='Đăng ký giữ xe')
+    reservation_vehicle_id = models.IntegerField(primary_key=True, default=1)
     vehicle_number = models.CharField(max_length=10)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
-
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='reservation_vehicles')
+    residents = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='resident_reservation')
+
+    def __str__(self):
+        return "Reservation for" + str(self.residents)
 
 
 class ResidentFee(models.Model):
@@ -102,11 +121,17 @@ class ElectronicLockerItem(BaseModel):
     apartment = models.OneToOneField(Apartment, related_name='apartment', null=False, primary_key=True,
                                      on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.name
+
 
 class Item(BaseModel):
     status = models.BooleanField(default=True)
-    item_name = models.CharField(max_length=255,null=True,default='Tên sản phẩm')
+    item_name = models.CharField(max_length=255, null=True, default='Tên sản phẩm')
     electronic_lock = models.ForeignKey(ElectronicLockerItem, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
 
 class Survey(BaseModel):
@@ -156,6 +181,9 @@ class ReflectionForm(BaseModel):
     content = models.TextField(max_length=50, null=True)
     status = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.tittle.__str__()
+
 
 class RepairServices(BaseModel):
     class EnumStatus(models.TextChoices):
@@ -163,76 +191,11 @@ class RepairServices(BaseModel):
         DENY = 'Không thể xử lý'
         DONE = 'Đã xử lý'
 
+    repair_name = models.CharField(max_length=50, default="phis")
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
 
     content = models.TextField(max_length=50, null=True)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
-
-#
-# class User(AbstractUser):
-#     avatar = CloudinaryField(null=True)
-#
-#
-# class BaseModel(models.Model):
-#     created_date = models.DateTimeField(auto_now_add=True, null=True)
-#     updated_date = models.DateTimeField(auto_now=True, null=True)
-#     active = models.BooleanField(default=True)
-#
-#     class Meta:
-#         abstract = True
-#
-#
-# class Category(BaseModel):
-#     name = models.CharField(max_length=50)
-#
-#     def __str__(self):
-#         return self.name
-#
-#
-# class Tag(BaseModel):
-#     name = models.CharField(max_length=50, unique=True)
-#
-#     def __str__(self):
-#         return self.name
-#
-#
-# class ItemBase(BaseModel):
-#     tags = models.ManyToManyField(Tag)
-#
-#     class Meta:
-#         abstract = True
-#
-#
-# class Course(ItemBase):
-#     name = models.CharField(max_length=255)
-#     description = RichTextField()
-#     image = CloudinaryField(null=True)
-#     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-#
-#     def __str__(self):
-#         return self.name
-#
-#
-# class Lesson(ItemBase):
-#     subject = models.CharField(max_length=255)
-#     content = RichTextField()
-#     image = CloudinaryField(null=True)
-#     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-#
-#     def __str__(self):
-#         return self.subject
-#
-#
-# class Interaction(BaseModel):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
-#
-#     def __str__(self):
-#         return f'{self.user_id} - {self.lesson_id}'
-#
-#     class Meta:
-#         abstract = True
-
 
 # class Comment(Interaction):
 #     content = models.CharField(max_length=255)
