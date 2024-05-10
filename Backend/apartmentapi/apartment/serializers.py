@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from apartment.models import ResidentFee, MonthlyFee, Resident, ElectronicLockerItem, Item, Apartment, ReflectionForm, \
-    Survey, Answer, Vehicle, ReservationVehicle, \
-    Response, User, Question
+    Survey, Answer, Vehicle, ReservationVehicle,Response, User, Question
 
 
 class ResidentFeeSerializer(serializers.ModelSerializer):
