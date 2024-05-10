@@ -78,31 +78,6 @@ class MonthlyFee(BaseModel):
     def __str__(self):
         return self.fee_name
 
-
-class Vehicle(BaseModel):
-    name = models.CharField(max_length=255, null=False)
-    price = models.IntegerField(default=1000)
-
-    def __str__(self):
-        return self.name
-
-
-class ReservationVehicle(BaseModel):
-    class EnumStatus(models.TextChoices):
-        PENDING = 'Đang chờ xử lý'
-        DENY = 'Không thể xử lý'
-        DONE = 'Đã đăng ký'
-
-    reservation_vehicle_id = models.IntegerField(primary_key=True, default=1)
-    vehicle_number = models.CharField(max_length=10)
-    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='reservation_vehicles')
-    residents = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='resident_reservation')
-
-    def __str__(self):
-        return "Reservation for" + str(self.residents)
-
-
 class ResidentFee(models.Model):
     payment_method = models.CharField(max_length=50)
     payment_proof = CloudinaryField(null=True)
@@ -112,6 +87,21 @@ class ResidentFee(models.Model):
 
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
     fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE)
+
+
+
+class ReservationVehicle(MonthlyFee):
+    class EnumStatus(models.TextChoices):
+        PENDING = 'Đang chờ xử lý'
+        DENY = 'Không thể xử lý'
+        DONE = 'Đã đăng ký'
+
+    vehicle_number = models.CharField(max_length=10)
+    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
+
+    def __str__(self):
+        return "Reservation for" + str(self.residents)
+
 
 
 class ElectronicLockerItem(BaseModel):
@@ -175,33 +165,17 @@ class Answer(models.Model):
 
 
 class ReflectionForm(BaseModel):
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
-
-    tittle = models.CharField(max_length=30, primary_key=True)
-    content = models.TextField(max_length=50, null=True)
-    status = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.tittle.__str__()
-
-
-class RepairServices(BaseModel):
     class EnumStatus(models.TextChoices):
         PENDING = 'Đang chờ xử lý'
         DENY = 'Không thể xử lý'
         DONE = 'Đã xử lý'
 
-    repair_name = models.CharField(max_length=50, default="phis")
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
 
+    tittle = models.CharField(max_length=30, primary_key=True)
     content = models.TextField(max_length=50, null=True)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
 
-# class Comment(Interaction):
-#     content = models.CharField(max_length=255)
-#
-#
-# class Like(Interaction):
-#
-#     class Meta:
-#         unique_together = ('user', 'lesson')
+    def __str__(self):
+        return self.tittle.__str__()
+

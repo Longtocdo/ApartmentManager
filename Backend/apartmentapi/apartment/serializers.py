@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apartment.models import ResidentFee, MonthlyFee, Resident, ElectronicLockerItem, Item, Apartment, ReflectionForm, \
-    Survey, Answer, Vehicle, ReservationVehicle, \
+    Survey, Answer, ReservationVehicle, \
     Response, User, Question
 
 
@@ -83,10 +83,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
 
-class VehicleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vehicle
-        fields = '__all__'
+
 
 
 class ReservationVehicleSerializer(serializers.ModelSerializer):

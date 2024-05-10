@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from apartment import serializers, paginators, perms
 from apartment.models import ResidentFee, User, ElectronicLockerItem, Item, MonthlyFee, ReflectionForm, Resident, \
-    Apartment, Survey, Answer, Vehicle, \
+    Apartment, Survey, Answer, \
     ReservationVehicle
 
 
