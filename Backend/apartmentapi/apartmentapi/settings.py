@@ -98,7 +98,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'apartmentdb',
         'USER': 'root',
-        'PASSWORD': 'prolaanh00',
+        'PASSWORD': 'Sang@150203',
         'HOST': ''  # mặc định localhost
     }
 }
