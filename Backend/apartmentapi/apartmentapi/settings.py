@@ -103,7 +103,11 @@ DATABASES = {
         'HOST': ''  # mặc định localhost
     }
 }
+<<<<<<< HEAD
 # ALLOWED_HOSTS = ['192.168.1.109']
+=======
+ALLOWED_HOSTS = []
+>>>>>>> 179a32882c81bcc53471a2983480f5d36f6bf5da
 
 import cloudinary
 

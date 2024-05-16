@@ -49,6 +49,7 @@ class ApartmentAdminSite(admin.AdminSite):
 admin_site = ApartmentAdminSite(name='apartment')
 
 
+
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
