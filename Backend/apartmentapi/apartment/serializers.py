@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from apartment.models import ResidentFee, MonthlyFee, Resident, ElectronicLockerItem, Item, Apartment, ReflectionForm, \
-    Survey, Answer, Vehicle, ReservationVehicle, \
+    Survey, Answer, ReservationVehicle, \
     Response, User, Question
+from django.contrib.auth.hashers import make_password
 
 
 class ResidentFeeSerializer(serializers.ModelSerializer):
@@ -21,13 +22,7 @@ class ResidentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resident
-        fields = ['user_infor', 'apartment', 'monthly_fees']
-
-
-class ElectronicLockerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ElectronicLockerItem
-        fields = '__all__'
+        fields = ['user_infor', 'monthly_fees']
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -40,6 +35,14 @@ class ApartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Apartment
         fields = '__all__'
+
+
+class ElectronicLockerSerializer(serializers.ModelSerializer):
+    apartment = ApartmentSerializer()
+
+    class Meta:
+        model = ElectronicLockerItem
+        fields = ['name', 'status', 'apartment']
 
 
 #
@@ -63,13 +66,26 @@ class ApartmentSerializer(serializers.ModelSerializer):
 #
 #
 class UserSerializer(serializers.ModelSerializer):
-
+    # def create(self, validated_data):
+    #     password = validated_data.pop('password')
+    #     user = User.objects.create(**validated_data)
+    #     user.set_password(password)  # Băm mật khẩu trước khi lưu
+    #     user.save()
+    #     return user
     def create(self, validated_data):
-        data = validated_data.copy()
+        # Kiểm tra xem có phải là superuser không
+        is_superuser = validated_data.pop('is_superuser', False)
 
-        user = User(**data)
-        user.set_password(data["password"])
-        user.save()
+        # Băm mật khẩu trước khi tạo người dùng
+        if not is_superuser:
+            password = validated_data.pop('password', None)
+            user = User.objects.create(**validated_data)
+            if password:
+                user.set_password(password)
+                user.save()
+                print("Mật khẩu đã được băm:", user.password)
+        else:
+            user = User.objects.create_superuser(**validated_data)
 
         return user
 
@@ -83,25 +99,17 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
 
-class VehicleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vehicle
-        fields = '__all__'
-
-
 class ReservationVehicleSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ReservationVehicle
-        fields = ['resident_reservation', 'reservation_vehicles', 'reservation_name', 'vehicle_number']
+        fields = '__all__'
         # fields = '__all__'
 
 
 class ReflectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReflectionForm
-        fields = ['resident', 'tittle', 'content']
-#
+        fields = '__all__'
 #
 # class CommentSerializer(serializers.ModelSerializer):
 #     user = UserSerializer()

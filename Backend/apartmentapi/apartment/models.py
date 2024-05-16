@@ -5,23 +5,7 @@ from cloudinary.models import CloudinaryField
 from enum import Enum
 from django_enum_choices.fields import EnumChoiceField
 from django.utils.translation import gettext_lazy as _
-
-
-class Apartment(models.Model):
-    class EnumRoom(models.IntegerChoices):
-        ROOM_1 = 1, 'Room 1'
-        ROOM_2 = 2, 'Room 2'
-        ROOM_3 = 3, 'Room 3'
-
-    name = models.CharField(max_length=20, unique=True, primary_key=True)
-    floor = models.IntegerField()
-    room = models.IntegerField(choices=EnumRoom.choices, default=EnumRoom.ROOM_2)
-
-    def management_fee(self):
-        return self.management_service.price * self.room
-
-    def __str__(self):
-        return self.name
+from django.contrib.auth.hashers import make_password
 
 
 class User(AbstractUser):
@@ -47,10 +31,27 @@ class User(AbstractUser):
 class Resident(models.Model):
     user_infor = models.OneToOneField(User, related_name='Resident', primary_key=True, on_delete=models.CASCADE,
                                       null=False)
-    apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return "RD" + self.user_infor.first_name + " " + self.user_infor.last_name
+        return "RD." + " " + self.user_infor.first_name + " " + self.user_infor.last_name
+
+
+class Apartment(models.Model):
+    class EnumRoom(models.IntegerChoices):
+        ROOM_1 = 1, 'Room 1'
+        ROOM_2 = 2, 'Room 2'
+        ROOM_3 = 3, 'Room 3'
+
+    name = models.CharField(max_length=20, unique=True)
+    floor = models.IntegerField()
+    room = models.IntegerField(choices=EnumRoom.choices, default=EnumRoom.ROOM_2)
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True)
+
+    def management_fee(self):
+        return self.management_service.price * self.room
+
+    def __str__(self):
+        return self.name
 
 
 class Manager(models.Model):
@@ -79,46 +80,38 @@ class MonthlyFee(BaseModel):
         return self.fee_name
 
 
-class Vehicle(BaseModel):
-    name = models.CharField(max_length=255, null=False)
-    price = models.IntegerField(default=1000)
-
-    def __str__(self):
-        return self.name
-
-
-class ReservationVehicle(BaseModel):
-    class EnumStatus(models.TextChoices):
-        PENDING = 'Đang chờ xử lý'
-        DENY = 'Không thể xử lý'
-        DONE = 'Đã đăng ký'
-
-    reservation_vehicle_id = models.IntegerField(primary_key=True, default=1)
-    vehicle_number = models.CharField(max_length=10)
-    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='reservation_vehicles')
-    residents = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='resident_reservation')
-
-    def __str__(self):
-        return "Reservation for" + str(self.residents)
-
-
 class ResidentFee(models.Model):
     payment_method = models.CharField(max_length=50)
     payment_proof = CloudinaryField(null=True)
     payment_date = models.DateField(auto_now_add=True)
     status = models.BooleanField(default=False)
     amount = models.IntegerField(default=1)
-
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
     fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.resident.__str__() + " / " + self.fee.fee_name
+
+
+class ReservationVehicle(MonthlyFee):
+    class EnumStatus(models.TextChoices):
+        PENDING = 'Đang chờ xử lý'
+        DENY = 'Không thể xử lý'
+        DONE = 'Đã đăng ký'
+
+    vehicle_number = models.CharField(max_length=10)
+    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return "Reservation for" + str(self.residents)
 
 
 class ElectronicLockerItem(BaseModel):
     name = models.CharField(max_length=30, default='Tủ đồ')
     status = models.BooleanField(default=False)
 
-    apartment = models.OneToOneField(Apartment, related_name='apartment', null=False, primary_key=True,
+    apartment = models.OneToOneField(Apartment, related_name='apartment', null=False,
                                      on_delete=models.CASCADE)
 
     def __str__(self):
@@ -129,9 +122,10 @@ class Item(BaseModel):
     status = models.BooleanField(default=True)
     item_name = models.CharField(max_length=255, null=True, default='Tên sản phẩm')
     electronic_lock = models.ForeignKey(ElectronicLockerItem, on_delete=models.CASCADE)
+    received_date = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
-        return self.name
+        return self.item_name
 
 
 class Survey(BaseModel):
@@ -150,7 +144,7 @@ class Question(BaseModel):
 
 
 class Choice(BaseModel):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='question_sv')
 
     content = models.CharField(max_length=30, primary_key=True)
     letter = models.CharField(max_length=1, help_text="A, B, C, D")
@@ -175,33 +169,16 @@ class Answer(models.Model):
 
 
 class ReflectionForm(BaseModel):
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
-
-    tittle = models.CharField(max_length=30, primary_key=True)
-    content = models.TextField(max_length=50, null=True)
-    status = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.tittle.__str__()
-
-
-class RepairServices(BaseModel):
     class EnumStatus(models.TextChoices):
         PENDING = 'Đang chờ xử lý'
         DENY = 'Không thể xử lý'
         DONE = 'Đã xử lý'
 
-    repair_name = models.CharField(max_length=50, default="phis")
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
 
+    tittle = models.CharField(max_length=30)
     content = models.TextField(max_length=50, null=True)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
 
-# class Comment(Interaction):
-#     content = models.CharField(max_length=255)
-#
-#
-# class Like(Interaction):
-#
-#     class Meta:
-#         unique_together = ('user', 'lesson')
+    def __str__(self):
+        return self.tittle.__str__()

@@ -24,11 +24,11 @@ from apartment.admin import admin_site
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Course API",
+        title="Apartment API",
         default_version='v1',
-        description="APIs for CourseApp",
-        contact=openapi.Contact(email="thanh.dh@ou.edu.vn"),
-        license=openapi.License(name="Dương Hữu Thành@2024"),
+        description="APIs for ApartmentApp",
+        contact=openapi.Contact(email="huroth200012@gmail.com"),
+        license=openapi.License(name="Apartment Manager"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),

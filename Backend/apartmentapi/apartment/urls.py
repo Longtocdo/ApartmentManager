@@ -12,9 +12,8 @@ r.register('monthlyfee', views.MonthlyFeeViewSet, basename='monthlyfee')
 r.register('electroniclocker', views.ElectronicLockerViewSet, basename='electroniclocker')
 r.register('reflection', views.ReflectionViewSet, basename='reflection')
 r.register('item', views.ItemViewSet, basename='item')
-r.register('re', views.ReViewSet, basename='re')
-
+r.register('reservation', views.ReservationViewSet, basename='re')
 
 urlpatterns = [
-    path('', include(r.urls))
+    path('', include(r.urls)),
 ]

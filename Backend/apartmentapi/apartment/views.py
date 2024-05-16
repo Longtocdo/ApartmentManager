@@ -3,8 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from apartment import serializers, paginators, perms
 from apartment.models import ResidentFee, User, ElectronicLockerItem, Item, MonthlyFee, ReflectionForm, Resident, \
-    Apartment, Survey, Answer, Vehicle, \
+    Apartment, Survey, Answer, \
     ReservationVehicle
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.shortcuts import get_object_or_404
 
 
 class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -25,31 +27,37 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
     queryset = Resident.objects.all()
     serializer_class = serializers.ResidentSerializer
 
-    # def get_permissions(self):
-    #     if self.action in ['add_reflections']:
-    #         return [permissions.IsAuthenticated()]
-    #
-    #     return [permissions.AllowAny()]
+    def get_permissions(self):
+        if self.action in ['add_reflections', 'get_residentfees']:
+            return [permissions.IsAuthenticated()]
 
-    @action(methods=['get'], url_path='residentfees', detail=True)
-    def get_residentfees(self, request, pk):
-        residentfees = self.get_object().residentfee_set.filter(status=True)
+        return [permissions.AllowAny()]
 
+    @action(methods=['get'], url_path='residentfees', detail=False)
+    def get_residentfees(self, request):
+        user_id = request.user.id
+
+        resident = get_object_or_404(Resident, user_infor=user_id)
+
+        residentfees = resident.residentfee_set.filter(status=True)
         q = request.query_params.get('q')
         if q:
             residentfees = residentfees.filter(id=q)
 
         return Response(serializers.ResidentFeeSerializer(residentfees, many=True).data, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], url_path='reflection', detail=True)
-    def get_reflection(self, request, pk):
-        u = request.user
-        return Response(serializers.ReflectionSerializer(u).data, status=status.HTTP_200_OK)
+    @action(detail=True, methods=['get'])
+    def get_reflection(self, request, pk=None):
+        resident = self.get_object()
+        reflection = ReflectionForm.objects.filter(resident=resident).first()
+        if reflection:
+            serializer = serializers.ReflectionSerializer(reflection)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'No reflection found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(methods=['post'], url_path='reflections', detail=True)
     def add_reflection(self, request, pk):
-        # r = self.get_object().reflection.create(tittle=request.data.get('tittle'),
-        #                                             content=request.data.get('content'), user=request.user)
         resident = self.get_object()
 
         reflection = request.data
@@ -64,15 +72,44 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(methods=['post'], url_path='reservation', detail=True)
-    def sign_vehical(self, request, pk):
-        rd = self.get_object()
-        vehical = request.data
-        vehical['resident'] = rd.user_infor
-        serializer = serializers.VehicleSerializer(data=vehical)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    @action(methods=['post'], detail=True)
+    def register_vehicle(self, request, pk=None):
+        resident = self.get_object()
+        serializer = serializers.ReservationVehicleSerializer(data=request.data)
+
+        if serializer.is_valid():
+            # Lấy dữ liệu đã xác thực từ serializer
+            vehicle_data = serializer.validated_data
+
+            # Thêm thông tin của cư dân vào dữ liệu của phương tiện
+            vehicle_data['resident'] = resident
+
+            # Lưu dữ liệu vào cơ sở dữ liệu
+            vehicle = ReservationVehicle.objects.create(**vehicle_data)
+
+            return Response(serializers.ReservationVehicleSerializer(vehicle).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # @action(methods=['post'], url_path='reservation', detail=True)
+    # def sign_vehicle(self, request, pk):
+    #     resident = self.get_object()
+    #
+    #     # Sử dụng serializer để xác thực dữ liệu
+    #     serializer = serializers.ReservationVehicleSerializer(data=request.data)
+    #
+    #     if serializer.is_valid():
+    #         # Lấy dữ liệu đã xác thực từ serializer
+    #         vehicle_data = serializer.validated_data
+    #
+    #         # Thêm thông tin của cư dân vào dữ liệu của phương tiện
+    #         vehicle_data['resident'] = resident.user_infor
+    #
+    #         # Lưu dữ liệu vào cơ sở dữ liệu
+    #         vehicle = ReservationVehicle.objects.create(**vehicle_data)
+    #
+    #         return Response(serializers.ReservationVehicleSerializer(vehicle).data, status=status.HTTP_201_CREATED)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MonthlyFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -92,7 +129,7 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
 
     #     course
     @action(methods=['get'], url_path='items', detail=True)
-    def get_items(self, request):
+    def get_items(self, request, pk):
         items = self.get_object().item_set.filter(status=True)
 
         q = request.query_params.get('q')
@@ -104,7 +141,7 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
 
 
 class ApartmentViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
-    queryset = Item.objects.all()
+    queryset = Apartment.objects.all()
     serializer_class = serializers.ApartmentSerializer
 
 
@@ -113,100 +150,12 @@ class ItemViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     serializer_class = serializers.ItemSerializer
 
 
-class ReViewSet(viewsets.ViewSet, generics.ListAPIView):
+class ReservationViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = ReservationVehicle.objects.all()
     serializer_class = serializers.ReservationVehicleSerializer
 
 
-# def get_queryset(self):
-#     queryset = self.queryset
-#
-#     if self.action.__eq__('list'):
-#         q = self.request.query_params.get('q')
-#         if q:
-#             queryset = queryset.filter(name__icontains=q)
-#
-#     return queryset
-
-# class CourseViewSet(viewsets.ViewSet, generics.ListAPIView):
-#     queryset = Course.objects.filter(active=True)
-#     serializer_class = serializers.CourseSerializer
-#     pagination_class = paginators.CoursePaginator
-#
-#     def get_queryset(self):
-#         queryset = self.queryset
-#
-#         if self.action.__eq__('list'):
-#             q = self.request.query_params.get('q')
-#             if q:
-#                 queryset = queryset.filter(name__icontains=q)
-#
-#             cate_id = self.request.query_params.get('category_id')
-#             if cate_id:
-#                 queryset = queryset.filter(category_id=cate_id)
-#
-#         return queryset
-#
-#     @action(methods=['get'], url_path='lessons', detail=True)
-#     def get_lessons(self, request, pk):
-#         lessons = self.get_object().lesson_set.filter(active=True)
-#
-#         q = request.query_params.get('q')
-#         if q:
-#             lessons = lessons.filter(subject__icontains=q)
-#
-#         return Response(serializers.LessonSerializer(lessons, many=True).data,
-#                         status=status.HTTP_200_OK)
-
-#
-# class LessonViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
-#     queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
-#     serializer_class = serializers.LessonDetailsSerializer
-#
-#     def get_permissions(self):
-#         if self.action in ['add_comment', 'like']:
-#             return [permissions.IsAuthenticated()]
-#
-#         return [permissions.AllowAny()]
-#
-#     def get_serializer_class(self):
-#         if self.request.user.is_authenticated:
-#             return serializers.AuthenticatedLessonDetailsSerializer
-#
-#         return self.serializer_class
-#
-#     @action(methods=['get'], url_path='comments', detail=True)
-#     def get_comments(self, request, pk):
-#         comments = self.get_object().comment_set.select_related('user').order_by('-id')
-#
-#         paginator = paginators.CommentPaginator()
-#         page = paginator.paginate_queryset(comments, request)
-#         if page is not None:
-#             serializer = serializers.CommentSerializer(page, many=True)
-#             return paginator.get_paginated_response(serializer.data)
-#
-#         return Response(serializers.CommentSerializer(comments, many=True).data)
-#
-#     @action(methods=['post'], url_path='comments', detail=True)
-#     def add_comment(self, request, pk):
-#         c = self.get_object().comment_set.create(content=request.data.get('content'),
-#                                                  user=request.user)
-#         return Response(serializers.CommentSerializer(c).data, status=status.HTTP_201_CREATED)
-#
-#     @action(methods=['post'], url_path='like', detail=True)
-#     def like(self, request, pk):
-#         li, created = Like.objects.get_or_create(lesson=self.get_object(),
-#                                                  user=request.user)
-#         if not created:
-#             li.active = not li.active
-#             li.save()
-#
-#         return Response(serializers.AuthenticatedLessonDetailsSerializer(self.get_object()).data)
-#
-#
-
-
-class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMixin):
     queryset = User.objects.filter(is_active=True)
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
@@ -226,9 +175,3 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
             user.save()
 
         return Response(serializers.UserSerializer(user).data)
-
-# class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView):
-#     queryset = Comment.objects.all()
-#     serializer_class = serializers.CommentSerializer
-#     permission_classes = [perms.CommentOwner]
-#

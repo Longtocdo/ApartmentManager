@@ -99,11 +99,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'apartmentdb',
         'USER': 'root',
-        'PASSWORD': 'Sang@150203',
+        'PASSWORD': 'prolaanh00',
         'HOST': ''  # mặc định localhost
     }
 }
-ALLOWED_HOSTS = ['192.168.1.109']
+# ALLOWED_HOSTS = ['192.168.1.109']
 
 import cloudinary
 
@@ -152,5 +152,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CLIENT_ID = 'EXofMtOocDGdrAfQqpWWakIm33uXHJYXFMKsVjM0'
-CLIENT_SECRET = '1i2HwMOMnd3G0gsZmxViqKKUZyAUfQKFwBbEOttgMfc5zidrZvs4TUT7C8hqbGkA2uyOam0Kt6ELSZRcLeuf1wiH3AxJihAio0paUcvPvkI6rP5LFMoUXaxyV37iqdv1'
+CLIENT_ID = 'jpFk2rrdFNhgimtgApzoZsGlfSfrHhjQ3V21AgwD'
+CLIENT_SECRET = 'JReD8XON7aMZhfuz10qWPwY1jzD6Rn6vsTpKmWGwawTHC8IONqWcVIbZXmLOcKNHfM5Da8T6Qjb8b6naaP6l99FUd903b7jge0mT1bT7GcmrQ6e5xc7zyGI2DZLcEsAu'

@@ -1,51 +1,73 @@
 {% extends 'admin/base_site.html' %}
 
 {% block content %}
-<h1>THỐNG KÊ THÔNG TIN CÁC KHOÁ HỌC THEO DANH MUC</h1>
+<div class="container">
+  <h1>Thống kê doanh thu theo tháng</h1>
 
-<ul>
-    {% for c in course_stats %}
-    <li><strong>{{ c.id }} - {{ c.name }}</strong> có {{ c.c }} bài học
-    </li>
-    {% endfor %}
-</ul>
+  <form action="{% url 'admin:apartment-stats' %}" method="get">
+    <label for="month">Chọn tháng:</label>
+    <input type="month" id="month" name="month">
+    <button type="submit">Xem thống kê</button>
+  </form>
 
-<div style="width: 50%">
+  <div id="chart-container" style="width: 50%;">
     <canvas id="myChart"></canvas>
+  </div>
+
+  <div>
+    <h2>Chi tiết thanh toán</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Người thanh toán</th>
+          <th scope="col">Số tiền đã đóng</th>
+          <th scope="col">Căn hộ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for resident_fee in resident_fees %}
+        <tr>
+          <td>{{ resident_fee.resident.user_infor }}</td>
+          <td>{{ resident_fee.amount }}</td>
+          <td>{{ resident_fee.resident }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    let labels = [];
-    let data = [];
-    {% for c in course_stats %}
-        labels.push('{{ c.name }}')
-        data.push({{ c.c }})
+  document.addEventListener('DOMContentLoaded', function() {
+    const labels = [];
+    const data = [];
+    {% for resident_fee in resident_fees %}
+      labels.push('{{ resident_fee.payment_date }}');
+      data.push('{{ resident_fee.amount }}');
     {% endfor %}
 
-    window.onload = function() {
-         const ctx = document.getElementById('myChart');
-
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Số lượng',
-        data: data,
-        borderWidth: 1,
-        backgroundColor: ['red', 'green', 'blue']
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Số tiền đã đóng',
+          data: data,
+          borderColor: 'blue',
+          backgroundColor: 'rgba(0, 0, 255, 0.1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
         }
       }
-    }
+    });
   });
-    }
-
 </script>
 {% endblock %}
