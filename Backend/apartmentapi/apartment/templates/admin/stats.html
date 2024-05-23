@@ -1,73 +1,119 @@
 {% extends 'admin/base_site.html' %}
 
 {% block content %}
-<div class="container">
-  <h1>Thống kê doanh thu theo tháng</h1>
+<style>
+    .chart-container {
+        max-width: 600px;
+        max-height: 400px;
+    }
 
-  <form action="{% url 'admin:apartment-stats' %}" method="get">
-    <label for="month">Chọn tháng:</label>
-    <input type="month" id="month" name="month">
-    <button type="submit">Xem thống kê</button>
-  </form>
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+</style>
+<h1>THỐNG KÊ DOANH THU DỰA TRÊN CÁC KHOẢN PHÍ ĐÃ THANH TOÁN</h1>
 
-  <div id="chart-container" style="width: 50%;">
-    <canvas id="myChart"></canvas>
-  </div>
+<form method="GET">
+    <label for="period">Chọn khoảng thời gian:</label>
+    <select id="period" name="period" onchange="this.form.submit()">
+        <option value="month" {% if period == 'month' %}selected{% endif %}>Tháng</option>
+        <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>Quý</option>
+        <option value="year" {% if period == 'year' %}selected{% endif %}>Năm</option>
+    </select>
+</form>
 
-  <div>
-    <h2>Chi tiết thanh toán</h2>
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Người thanh toán</th>
-          <th scope="col">Số tiền đã đóng</th>
-          <th scope="col">Căn hộ</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for resident_fee in resident_fees %}
-        <tr>
-          <td>{{ resident_fee.resident.user_infor }}</td>
-          <td>{{ resident_fee.amount }}</td>
-          <td>{{ resident_fee.resident }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<h2>DOANH THU</h2>
+
+<ul>
+    {% for stat in revenue_stats %}
+    <li>
+        <strong>
+            {% if period == 'month' %}
+            {{ stat.month|date:"F, Y" }}
+            {% elif period == 'quarter' %}
+            {% if stat.quarter %}{{ stat.quarter|date:"F, Y" }}{% endif %}
+            {% elif period == 'year' %}
+            {% if stat.year %}{{ stat.year|date:"Y" }}{% endif %}
+            {% endif %}
+            :</strong> {{ stat.total_revenue }} USD
+    </li>
+    {% endfor %}
+</ul>
+
+<div class="chart-container">
+    <canvas id="revenueChart"></canvas>
+</div>
+
+
+<div class="chart-container">
+    <canvas id="revenueLineChart"></canvas>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const labels = [];
-    const data = [];
-    {% for resident_fee in resident_fees %}
-      labels.push('{{ resident_fee.payment_date }}');
-      data.push('{{ resident_fee.amount }}');
+    let revenueLabels = [];
+    let revenueValues = [];
+
+    {% for stat in revenue_stats %}
+        {% if period == 'month' %}
+            revenueLabels.push('{{ stat.month|date:"F, Y" }}')
+            revenueValues.push({{ stat.total_revenue }});
+        {% elif period == 'quarter' %}
+            revenueLabels.push('{{ stat.quarter|date:"F, Y" }}')
+            revenueValues.push({{ stat.total_revenue }})
+        {% elif period == 'year' %}
+            revenueLabels.push('{{ stat.year|date:"Y" }}')
+            revenueValues.push({{ stat.total_revenue }})
+        {% endif %}
     {% endfor %}
 
-    const ctx = document.getElementById('myChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Số tiền đã đóng',
-          data: data,
-          borderColor: 'blue',
-          backgroundColor: 'rgba(0, 0, 255, 0.1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        }
-      }
-    });
-  });
+    window.onload = () => {
+        const revenueCtx= document.getElementById('revenueChart').getContext('2d');
+
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Doanh thu (USD)',
+                    data: revenueValues,
+                    borderWidth: 1,
+                    backgroundColor: 'rgb(54, 162, 235)'
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+
+        const revenueYearCtx = document.getElementById('revenueLineChart').getContext('2d');
+
+        new Chart(revenueYearCtx, {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Doanh thu qua các thời điểm (USD)',
+                    data: revenueValues,
+                    borderWidth: 1,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)'
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}

@@ -70,8 +70,19 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+# settings.py
+
+ZALOPAY_CONFIG = {
+    'app_id': '553',
+    'key1': '9phuAOYhan4urywHTh0ndEXiV3pKHr5Q',
+    'key2': 'Iyz2habzyr7AG8SgvoBCbKwKi3UzlLi3',
+    'create_order_endpoint': 'https://sandbox.zalopay.com.vn/v001/tpe/createorder',
+}
 
 ROOT_URLCONF = 'apartmentapi.urls'
+# settings.py
+
+ZALOPAY_KEY2 = 'Iyz2habzyr7AG8SgvoBCbKwKi3UzlLi3'
 
 TEMPLATES = [
     {
@@ -103,11 +114,9 @@ DATABASES = {
         'HOST': ''  # mặc định localhost
     }
 }
-<<<<<<< HEAD
+
 # ALLOWED_HOSTS = ['192.168.1.109']
-=======
-ALLOWED_HOSTS = []
->>>>>>> 179a32882c81bcc53471a2983480f5d36f6bf5da
+
 
 import cloudinary
 

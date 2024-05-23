@@ -23,17 +23,18 @@ class User(AbstractUser):
     avatar = CloudinaryField('avatar', null=True)
     created = models.DateField(auto_now_add=True, null=True)
     change_password_required = models.BooleanField(default=True)
+    is_locked = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
 
 
 class Resident(models.Model):
-    user_infor = models.OneToOneField(User, related_name='Resident', primary_key=True, on_delete=models.CASCADE,
-                                      null=False)
+    user_info = models.OneToOneField(User, related_name='resident_profile', primary_key=True, on_delete=models.CASCADE,
+                                     null=False)
 
     def __str__(self):
-        return "RD." + " " + self.user_infor.first_name + " " + self.user_infor.last_name
+        return "RD." + " " + self.user_info.first_name + " " + self.user_info.last_name
 
 
 class Apartment(models.Model):
@@ -43,9 +44,9 @@ class Apartment(models.Model):
         ROOM_3 = 3, 'Room 3'
 
     name = models.CharField(max_length=20, unique=True)
-    floor = models.IntegerField()
+    floor = models.IntegerField(default=1)
     room = models.IntegerField(choices=EnumRoom.choices, default=EnumRoom.ROOM_2)
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True)
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='apartments')
 
     def management_fee(self):
         return self.management_service.price * self.room
@@ -55,12 +56,12 @@ class Apartment(models.Model):
 
 
 class Manager(models.Model):
-    user_infor = models.OneToOneField(User, related_name='Manager', primary_key=True, null=False,
-                                      on_delete=models.CASCADE)
+    user_info = models.OneToOneField(User, related_name='manager_profile', primary_key=True, null=False,
+                                     on_delete=models.CASCADE)
     area = models.CharField(max_length=20, null=True)
 
     def __str__(self):
-        return "Mn." + self.user_infor.first_name + " " + self.user_infor.last_name
+        return "Mn." + self.user_info.first_name + " " + self.user_info.last_name
 
 
 class BaseModel(models.Model):
@@ -74,20 +75,25 @@ class BaseModel(models.Model):
 class MonthlyFee(BaseModel):
     fee_name = models.CharField(max_length=30)
     price = models.IntegerField()
-    residents = models.ManyToManyField(Resident, through='ResidentFee')
+    residents = models.ManyToManyField(Resident, through='ResidentFee', related_name='monthly_fees')
 
     def __str__(self):
         return self.fee_name
 
 
 class ResidentFee(models.Model):
-    payment_method = models.CharField(max_length=50)
+    class EnumPayment(models.TextChoices):
+        PM1_1 = 'Chuyển khoản Ngân Hàng', 'Chuyển khoản Ngân Hàng'
+        PM2_2 = 'Chuyển khoản Ngân 4', 'Chuyển khoản MoMo'
+        PM3_3 = 'Chuyển khoản Ngân 2', 'Tiền mặt'
+
+    payment_method = models.CharField(choices=EnumPayment.choices, default=EnumPayment.PM1_1, max_length=50)
     payment_proof = CloudinaryField(null=True)
     payment_date = models.DateField(auto_now_add=True)
     status = models.BooleanField(default=False)
     amount = models.IntegerField(default=1)
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
-    fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE)
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='resident_fees')
+    fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE, related_name='resident_fees')
 
     def __str__(self):
         return self.resident.__str__() + " / " + self.fee.fee_name
@@ -95,13 +101,13 @@ class ResidentFee(models.Model):
 
 class ReservationVehicle(MonthlyFee):
     class EnumStatus(models.TextChoices):
-        PENDING = 'Đang chờ xử lý'
-        DENY = 'Không thể xử lý'
-        DONE = 'Đã đăng ký'
+        PENDING = 'Đang chờ xử lý', 'Đang chờ xử lý'
+        DENY = 'Không thể xử lý', 'Không thể xử lý'
+        DONE = 'Đã đăng ký', 'Đã đăng ký'
 
     vehicle_number = models.CharField(max_length=10)
-    status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True)
+    status = models.CharField(max_length=50, choices=EnumStatus.choices, default=EnumStatus.PENDING)
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='reservations')
 
     def __str__(self):
         return "Reservation for" + str(self.residents)
@@ -111,8 +117,7 @@ class ElectronicLockerItem(BaseModel):
     name = models.CharField(max_length=30, default='Tủ đồ')
     status = models.BooleanField(default=False)
 
-    apartment = models.OneToOneField(Apartment, related_name='apartment', null=False,
-                                     on_delete=models.CASCADE)
+    apartment = models.OneToOneField(Apartment, related_name='electronic_locker', null=False, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -121,7 +126,7 @@ class ElectronicLockerItem(BaseModel):
 class Item(BaseModel):
     status = models.BooleanField(default=True)
     item_name = models.CharField(max_length=255, null=True, default='Tên sản phẩm')
-    electronic_lock = models.ForeignKey(ElectronicLockerItem, on_delete=models.CASCADE)
+    electronic_lock = models.ForeignKey(ElectronicLockerItem, on_delete=models.CASCADE, related_name='items')
     received_date = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
@@ -129,22 +134,26 @@ class Item(BaseModel):
 
 
 class Survey(BaseModel):
-    tittle = models.CharField(max_length=30, primary_key=True)
+    title = models.CharField(max_length=30, primary_key=True)
+
     data_expire = models.DateField()
     status = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.tittle
+        return self.title
 
 
 class Question(BaseModel):
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')
 
     content = models.CharField(max_length=30, primary_key=True)
 
+    def __str__(self):
+        return self.content
+
 
 class Choice(BaseModel):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='question_sv')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
 
     content = models.CharField(max_length=30, primary_key=True)
     letter = models.CharField(max_length=1, help_text="A, B, C, D")
@@ -152,20 +161,23 @@ class Choice(BaseModel):
 
 class Response(models.Model):
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
-    resident_id = models.IntegerField()
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='responses')
     submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.survey) + " of" + " " + str(self.resident)
 
 
 class Answer(models.Model):
-    response = models.ForeignKey(Response, on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    choice = models.ForeignKey(Choice, on_delete=models.CASCADE)
+    response = models.ForeignKey(Response, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
+    choice = models.ForeignKey(Choice, on_delete=models.CASCADE, related_name='answers')
 
     class Meta:
         unique_together = ('response', 'question')  # Each question can only be answered once per response
 
     def __str__(self):
-        return f"{self.question.text} - {self.choice.letter}"
+        return f"{self.question.content} - {self.choice.letter}"
 
 
 class ReflectionForm(BaseModel):
@@ -174,11 +186,11 @@ class ReflectionForm(BaseModel):
         DENY = 'Không thể xử lý'
         DONE = 'Đã xử lý'
 
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='reflection_forms')
 
-    tittle = models.CharField(max_length=30)
+    title = models.CharField(max_length=30)
     content = models.TextField(max_length=50, null=True)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
 
     def __str__(self):
-        return self.tittle.__str__()
+        return self.title.__str__()
