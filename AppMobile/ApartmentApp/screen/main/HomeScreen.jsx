@@ -1,19 +1,3 @@
-// import { StatusBar } from 'expo-status-bar';
-// import { StyleSheet, Text, View } from 'react-native';
-
-// export default function Home() {
-//   return (
-//     <View style={styles.container}>
-      
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-    
-//   },
-// });
 
 
 import * as React from 'react';
@@ -132,8 +116,8 @@ const TienIch =[
     },
     
 ]
-export default HomeScreen = () => (
-    <View style={styles.container} >
+export default HomeScreen = ({navigation}) => (
+    <ScrollView style={styles.container} >
         <View style={styles.header}>
              <ImageBackground source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner.png')} style={styles.image}>
                 <Card.Title style={styles.card}
@@ -150,8 +134,7 @@ export default HomeScreen = () => (
                 />
              </ImageBackground>
         </View>
-
-        <View style = {styles.body}>
+        <View  style = {styles.body}>
             <View style={styles.menu}>
                 {Menu.map(c=> <View id={c.name} style={{ alignItems: 'center',width:'25%', paddingBottom:10 }}>
                          {c.avatar}
@@ -188,14 +171,16 @@ export default HomeScreen = () => (
                     />
                 </ScrollView>
             </View>
-          
+          <View>
+            <Text style={{fontWeight:'600', fontSize:15, marginTop:10}}>Nổi bật </Text>
              <View style={styles.tienIch}>
+                
                 {TienIch.map(c=> <View id={c.name} style={{ alignItems: 'center',width:'25%', paddingBottom:10 }}>
                          {c.image}
                          <Text>{c.name}</Text>
                 </View>)}
              </View>
-
+             </View>
              <View style={{marginTop:15}}>
                     <Text>Dịch vụ tòa nhà</Text>
                     <View>
@@ -314,24 +299,22 @@ export default HomeScreen = () => (
 
              </View>
         </View>
-  </View>
+  </ScrollView>
 );
 
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
     },
     header:{
-        flex:2,
+        height:145
     },
     body:{
-        flex:9,
-        backgroundColor:'white',
+        backgroundColor:'#f0f5f7',
         marginTop:-15,
         borderRadius:15,
         padding:10,
-        paddingTop:20
+        paddingTop:15
     },
     image: {
         flex: 1,
