@@ -118,7 +118,7 @@ const TienIch = [
   },
 
 ]
-export default HomeScreen = ({ navigation }) => (
+export default PaymentDetailScreen = ({ navigation }) => (
   <ScrollView style={styles.container} >
     <View style={styles.header}>
       <ImageBackground source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner.png')} style={styles.image}>

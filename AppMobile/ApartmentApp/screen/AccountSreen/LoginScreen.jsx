@@ -11,23 +11,20 @@ import { theme } from '../../core/theme'
 import { emailValidator } from '../../helpers/emailValidator'
 import { passwordValidator } from '../../helpers/passwordValidator'
 
-// navigation
-export default function LoginScreen({  }) {
+
+export default function LoginScreen({  navigation}) {
   const [email, setEmail] = useState({ value: '', error: '' })
   const [password, setPassword] = useState({ value: '', error: '' })
 
   const onLoginPressed = () => {
-    const emailError = emailValidator(email.value)
-    const passwordError = passwordValidator(password.value)
-    if (emailError || passwordError) {
-      setEmail({ ...email, error: emailError })
-      setPassword({ ...password, error: passwordError })
-      return
-    }
-    // navigation.reset({
-    //   index: 0,
-    //   routes: [{ name: 'Dashboard' }],
-    // })
+    // const emailError = emailValidator(email.value)
+    // const passwordError = passwordValidator(password.value)
+    // if (emailError || passwordError) {
+    //   setEmail({ ...email, error: emailError })
+    //   setPassword({ ...password, error: passwordError })
+    //   return
+    // }
+    navigation.navigate("HomeSreen")
   }
 
   return (
@@ -36,9 +33,9 @@ export default function LoginScreen({  }) {
       <BackButton goBack={()=>{}} />
 
       <Logo />
-      <Header>Welcome back.</Header>
+      <Header>Welcome back</Header>
       <TextInput
-        label="Email"
+        label="Username or email"
         returnKeyType="next"
         value={email.value}
         onChangeText={(text) => setEmail({ value: text, error: '' })}
@@ -70,7 +67,7 @@ export default function LoginScreen({  }) {
       </Button>
       <View style={styles.row}>
         <Text>Don’t have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.replace('RegisterScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Đăng ký')}>
           <Text style={styles.link}>Sign up</Text>
         </TouchableOpacity>
       </View>

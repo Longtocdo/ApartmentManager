@@ -12,8 +12,7 @@ import { emailValidator } from '../../helpers/emailValidator'
 import { passwordValidator } from '../../helpers/passwordValidator'
 import { nameValidator } from '../../helpers/nameValidator'
 
-//navigation
-export default function RegisterScreen({  }) {
+export default function RegisterScreen({ navigation}) {
   const [name, setName] = useState({ value: '', error: '' })
   const [email, setEmail] = useState({ value: '', error: '' })
   const [password, setPassword] = useState({ value: '', error: '' })
@@ -79,7 +78,7 @@ export default function RegisterScreen({  }) {
       </Button>
       <View style={styles.row}>
         <Text>Already have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.replace('LoginScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Đăng nhập')}>
           <Text style={styles.link}>Login</Text>
         </TouchableOpacity>
       </View>
