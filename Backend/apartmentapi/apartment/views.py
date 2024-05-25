@@ -1,6 +1,11 @@
-from rest_framework import viewsets, generics, status, parsers, permissions
+import string
+import urllib
+
+from rest_framework import viewsets, generics, parsers, permissions
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.response import Response as ResponseRest
+from rest_framework import status
+from django.conf import settings
 from apartment import serializers, paginators, perms
 from django.core.mail import send_mail
 from apartment.models import *
@@ -34,33 +39,41 @@ class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
             residentfee.resident = request.user.resident
             residentfee.status = True
             residentfee.save()
-            return Response({'message': 'Receipt paid successfully'}, status=status.HTTP_200_OK)
+            return ResponseRest({'message': 'Receipt paid successfully'}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(dict(error=e.__str__()), status=status.HTTP_400_BAD_REQUEST)
+            return ResponseRest(dict(error=e.__str__()), status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Resident.objects.all()
     serializer_class = serializers.ResidentSerializer
 
-    def get_permissions(self):
-        if self.action in ['add_reflections', 'get_residentfees']:
-            return [permissions.IsAuthenticated()]
-
-        return [permissions.AllowAny()]
+    # def get_permissions(self):
+    #     if self.action in ['add_reflections', 'get_residentfees']:
+    #         return [permissions.IsAuthenticated()]
+    #     return [permissions.AllowAny()]
 
     @action(methods=['get'], url_path='residentfees', detail=False)
     def get_residentfees(self, request):
         user_id = request.user.id
-
         resident = get_object_or_404(Resident, user_infor=user_id)
-
         residentfees = resident.residentfee_set.filter(status=True)
         q = request.query_params.get('q')
         if q:
             residentfees = residentfees.filter(id=q)
+        return ResponseRest(serializers.ResidentFeeSerializer(residentfees, many=True).data, status=status.HTTP_200_OK)
 
-        return Response(serializers.ResidentFeeSerializer(residentfees, many=True).data, status=status.HTTP_200_OK)
+    @action(methods=['post'], url_path='residentfeess', detail=True)
+    def add_residentfeess(self, request, pk=None):
+        resident = self.get_object()
+        residentfee_data = request.data.copy()
+        residentfee_data['resident'] = resident.user_info  # Sử dụng ID của resident
+        serializer = serializers.ResidentFeeSerializer(data=residentfee_data)
+        # Validate và lưu resident fee
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return ResponseRest(serializer.data)
 
     @action(detail=True, methods=['get'])
     def get_reflection(self, request, pk=None):
@@ -68,25 +81,23 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
         reflection = ReflectionForm.objects.filter(resident=resident).first()
         if reflection:
             serializer = serializers.ReflectionFormSerializer(reflection)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return ResponseRest(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'No reflection found'}, status=status.HTTP_404_NOT_FOUND)
+            return ResponseRest({'message': 'No reflection found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(methods=['post'], url_path='reflections', detail=True)
     def add_reflection(self, request, pk):
         resident = self.get_object()
+        reflection_data = request.data.copy()
+        reflection_data['resident'] = resident.id  # Sử dụng ID của resident
 
-        reflection = request.data
+        serializer = serializers.ReflectionFormSerializer(data=reflection_data)
 
-        reflection['resident'] = resident.user_infor
-
-        serializer = serializers.ReflectionFormSerializer(data=reflection)
-
-        # Validate và lưu appointment
+        # Validate và lưu reflection
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return ResponseRest(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], detail=True)
     def register_vehicle(self, request, pk=None):
@@ -94,18 +105,12 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
         serializer = serializers.ReservationVehicleSerializer(data=request.data)
 
         if serializer.is_valid():
-            # Lấy dữ liệu đã xác thực từ serializer
             vehicle_data = serializer.validated_data
-
-            # Thêm thông tin của cư dân vào dữ liệu của phương tiện
             vehicle_data['resident'] = resident
-
-            # Lưu dữ liệu vào cơ sở dữ liệu
             vehicle = ReservationVehicle.objects.create(**vehicle_data)
-
-            return Response(serializers.ReservationVehicleSerializer(vehicle).data, status=status.HTTP_201_CREATED)
+            return ResponseRest(serializers.ReservationVehicleSerializer(vehicle).data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return ResponseRest(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MonthlyFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -133,8 +138,47 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
         if q:
             items = items.filter(name__icontains=q)
 
-        return Response(serializers.ItemSerializer(items, many=True).data,
-                        status=status.HTTP_200_OK)
+        return ResponseRest(serializers.ItemSerializer(items, many=True).data,
+                            status=status.HTTP_200_OK)
+
+    @action(methods=['post'], detail=True)
+    def mark_as_received(self, request, pk=None):
+        try:
+            electronic_locker = self.get_object()
+            item_id = request.data.get('item_id')
+            print(item_id)
+            if not item_id:
+                return ResponseRest({'detail': 'Item ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            item = Item.objects.get(pk=item_id, electronic_lock=electronic_locker)
+            if item.status == 0:
+                item.status = 1
+                item.save()
+
+                # Gửi email thông báo cho cư dân
+                subject = 'Notification: Your item is ready for pickup'
+                message = f'Hello {item.electronic_lock.apartment.resident.user_info.first_name},\n\n'
+                message += f'Your item "{item.item_name}" is now available for pickup.\n\n'
+                message += 'Please come to the front desk to collect it.\n\n'
+                message += 'Best regards,\nThe Management Team'
+                recipient_email = item.electronic_lock.apartment.resident.user_info.email
+
+                send_mail(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [recipient_email],
+                    fail_silently=False,
+                )
+
+                return ResponseRest({'detail': 'Item marked as received successfully and notification email sent.'},
+                                    status=status.HTTP_200_OK)
+            else:
+                return ResponseRest({'detail': 'Item is not in pending state.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Item.DoesNotExist:
+            return ResponseRest({'detail': 'Item not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return ResponseRest({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ApartmentViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
@@ -162,11 +206,36 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
 
-    def get_permissions(self):
-        if self.action in ['get_current_user']:
-            return [permissions.IsAuthenticated()]
+    # def get_permissions(self):
+    #     #     if self.action in ['get_current_user']:
+    #     #         return [permissions.IsAuthenticated()]
+    #     #
+    #     #     return [permissions.AllowAny()]
 
-        return [permissions.AllowAny()]
+    @action(detail=False, methods=['patch'], url_path='update_password', url_name='change_password')
+    def update_password(self, request):
+        user_id = request.data.get('id', None)
+        old_password = request.data.get('old_password', None)
+        new_password = request.data.get('new_password', None)
+
+        if not user_id or not old_password or not new_password:
+            return ResponseRest({'detail': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return ResponseRest({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if user.change_password_required:
+            if user.check_password(old_password):
+                user.set_password(new_password)
+                user.change_password_required = False
+                user.save()
+                return ResponseRest({'detail': 'Password changed successfully'}, status=status.HTTP_200_OK)
+            else:
+                return ResponseRest({'detail': 'Invalid old password'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return ResponseRest({'detail': 'Password change not required'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
     def get_current_user(self, request):
@@ -176,7 +245,36 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
                 setattr(user, k, v)
             user.save()
 
-        return Response(serializers.UserSerializer(user).data)
+        return ResponseRest(serializers.UserSerializer(user).data)
+
+    @action(detail=False, methods=['post'], url_path='forgot_password', url_name='forgot_password')
+    def forgot_password(self, request):
+        email = request.data.get('email', None)
+        if not email:
+            return ResponseRest({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return ResponseRest({'detail': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Tạo một mật khẩu mới ngẫu nhiên
+        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
+        # Mã hóa mật khẩu mới
+        user.password = make_password(new_password)
+        user.save()
+
+        # Gửi mật khẩu mới qua email
+        send_mail(
+            'New Password',
+            f'Your new password is: {new_password}',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
+
+        return ResponseRest({'detail': 'New password has been sent to your email address.'}, status=status.HTTP_200_OK)
 
 
 class AnswerViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -303,7 +401,6 @@ def momo_ipn(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
-
 # import hmac
 # import hashlib
 # ZALOPAY
@@ -390,3 +487,39 @@ class ZaloViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+
+        # coding=utf-8
+        # Python 3.6
+
+    @csrf_exempt
+    @action(detail=False, methods=['post'], url_path='callback', url_name='create_zalo')
+    def callback(self, request):
+        config = {
+            'key2': 'eG4r0GcoNtRGbO8'
+        }
+
+        result = {}
+
+        try:
+            cbdata = request.data
+            mac = hmac.new(config['key2'].encode(), cbdata['data'].encode(), hashlib.sha256).hexdigest()
+
+            # kiểm tra callback hợp lệ (đến từ ZaloPay server)
+            if mac != cbdata['mac']:
+                # callback không hợp lệ
+                result['return_code'] = -1
+                result['return_message'] = 'mac not equal'
+            else:
+                # thanh toán thành công
+                # merchant cập nhật trạng thái cho đơn hàng
+                dataJson = json.loads(cbdata['data'])
+                print("update order's status = success where app_trans_id = " + dataJson['app_trans_id'])
+
+                result['return_code'] = 1
+                result['return_message'] = 'success'
+        except Exception as e:
+            result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
+            result[' e'] = str(e)
+
+        # thông báo kết quả cho ZaloPay server
+        return JsonResponse(result)

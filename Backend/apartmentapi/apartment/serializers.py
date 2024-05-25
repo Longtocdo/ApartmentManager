@@ -65,8 +65,8 @@ class MonthlyFeeSerializer(serializers.ModelSerializer):
 
 
 class ResidentFeeSerializer(serializers.ModelSerializer):
-    resident = ResidentSerializer()
-    fee = MonthlyFeeSerializer()
+    resident = ResidentSerializer
+    fee = MonthlyFeeSerializer
 
     class Meta:
         model = ResidentFee
@@ -74,7 +74,7 @@ class ResidentFeeSerializer(serializers.ModelSerializer):
 
 
 class ReservationVehicleSerializer(serializers.ModelSerializer):
-    resident = ResidentSerializer()
+    resident = ResidentSerializer
 
     class Meta:
         model = ReservationVehicle

@@ -121,11 +121,19 @@ DATABASES = {
 import cloudinary
 
 cloudinary.config(
-    cloud_name="dzcj0i6fy",
-    api_key="717492316814942",
-    api_secret="mX2l-A2gkc1C2zuYii9JAEfWc14"
+    cloud_name="dbecreoes",
+    api_key="543635266845376",
+    api_secret="32WNqMLBNCYm-wisY_0zr44BNRA"
 )
+#the email settings
 
+
+MAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "huroth200012@gmail.com"
+EMAIL_HOST_PASSWORD = "tglhdtlzawbmjswl"
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
