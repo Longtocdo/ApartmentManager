@@ -1,6 +1,6 @@
 import string
 import urllib
-
+from django.contrib.auth import authenticate, login
 from rest_framework import viewsets, generics, parsers, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response as ResponseRest
@@ -89,7 +89,7 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
     def add_reflection(self, request, pk):
         resident = self.get_object()
         reflection_data = request.data.copy()
-        reflection_data['resident'] = resident.id  # Sử dụng ID của resident
+        reflection_data['resident'] = resident.user_info  # Sử dụng ID của resident
 
         serializer = serializers.ReflectionFormSerializer(data=reflection_data)
 
@@ -211,6 +211,49 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
     #     #         return [permissions.IsAuthenticated()]
     #     #
     #     #     return [permissions.AllowAny()]
+    # @action(detail=False, methods=['post'], url_path='login', url_name='login')
+    # def login_user(self, request):
+    #     username = request.data.get('username')
+    #     password = request.data.get('password')
+    #
+    #     if not username or not password:
+    #         return ResponseRest({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     user = authenticate(username=username, password=password)
+    #
+    #     if user is not None:
+    #         login(request, user)
+    #         serializer = serializers.UserSerializer(user, context={'request': request})
+    #         return ResponseRest(serializer.data, status=status.HTTP_200_OK)
+    #     else:
+    #         return ResponseRest({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    @action(detail=False, methods=['post'], url_path='register_user', url_name='register_user')
+    def register_user(self, request):
+        try:
+            data = request.data
+            avatar = data.get("avatar")
+            new_avatar = cloudinary.uploader.upload(avatar)
+
+            new_user = User.objects.create_user(
+                first_name=data.get("first_name"),
+                last_name=data.get("last_name"),
+                username=data.get("username"),
+                email=data.get("email"),
+                password=make_password(data.get("password")),
+                avatar=new_avatar['secure_url'],
+                phone=data.get("phone"),
+                sex=data.get("sex", User.EnumSex.MALE),
+                role=data.get("role", User.EnumRole.RESIDENT)
+            )
+
+            if new_user.role == User.EnumRole.RESIDENT:
+                Resident.objects.create(user_info=new_user)
+
+            return ResponseRest(data=serializers.UserSerializer(new_user, context={'request': request}).data,
+                                status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return ResponseRest(dict(error=str(e)), status=status.HTTP_403_FORBIDDEN)
 
     @action(detail=False, methods=['patch'], url_path='update_password', url_name='change_password')
     def update_password(self, request):
@@ -236,6 +279,22 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
                 return ResponseRest({'detail': 'Invalid old password'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return ResponseRest({'detail': 'Password change not required'}, status=status.HTTP_400_BAD_REQUEST)
+        # Hàm upload avatar
+
+    @action(detail=True, methods=['post'], url_path='upload_avatar', url_name='upload_avatar')
+    def upload_avatar(self, request, pk=None):
+        user_id = request.data.get('id', None)
+        avatar_file = request.data.get('avatar')
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return ResponseRest({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_avatar = cloudinary.uploader.upload(avatar_file)
+        user.avatar = new_avatar['secure_url']
+        user.save()
+        return ResponseRest({'detail': 'Avatar uploaded successfully'}, status=status.HTTP_200_OK)
 
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
     def get_current_user(self, request):
@@ -302,47 +361,34 @@ from apartment.models import ResidentFee
 def process_payment(request):
     if request.method == 'POST':
         try:
-            # Nhận thông tin thanh toán từ yêu cầu POST
             payment_data = json.loads(request.body)
             amount = payment_data.get('price')
-            resident_fee_id = payment_data.get('resident_fee_id')  # Lấy resident_fee_id từ yêu cầu POST
+            resident_fee_id = payment_data.get('resident_fee_id')
 
-            # Kiểm tra xem resident_fee_id có tồn tại hay không
             try:
                 resident_fee = ResidentFee.objects.get(id=resident_fee_id)
             except ResidentFee.DoesNotExist:
                 return JsonResponse({'error': 'ResidentFee not found'}, status=404)
 
-            # Lấy số tiền từ ResidentFee (kế thừa từ MonthlyFee)
             expected_amount = resident_fee.fee.price
-
-            # Kiểm tra số tiền có khớp nhau hay không
             if amount != expected_amount:
                 return JsonResponse({'error': 'Amount does not match'}, status=400)
 
-            # Tạo orderId và requestId
             order_id = str(uuid.uuid4())
             request_id = str(uuid.uuid4())
 
-            # Cấu hình thông tin MoMo
             endpoint = "https://test-payment.momo.vn/v2/gateway/api/create"
             access_key = "F8BBA842ECF85"
             secret_key = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
             order_info = str(resident_fee_id)
-            redirect_url = "http://127.0.0.1:8000/"  # Thay đổi URL redirect tại đây
-            ipn_url = "http://127.0.0.1:8000/api/momo_ipn/"  # Thay đổi URL IPN tại đây
+            redirect_url = "http://127.0.0.1:8000/"
+            ipn_url = "https://msang2003.pythonanywhere.com/api/momo_ipn/"
 
-            # Tạo chuỗi chữ ký
-            raw_signature = "accessKey=" + access_key + "&amount=" + str(amount) + "&extraData=" + "" \
-                            + "&ipnUrl=" + ipn_url + "&orderId=" + order_id + "&orderInfo=" + order_info \
-                            + "&partnerCode=MOMO" + "&redirectUrl=" + redirect_url + "&requestId=" + request_id \
-                            + "&requestType=captureWallet"
+            raw_signature = f"accessKey={access_key}&amount={amount}&extraData=&ipnUrl={ipn_url}&orderId={order_id}&orderInfo={order_info}&partnerCode=MOMO&redirectUrl={redirect_url}&requestId={request_id}&requestType=captureWallet"
             h = hmac.new(bytes(secret_key, 'ascii'), bytes(raw_signature, 'ascii'), hashlib.sha256)
             signature = h.hexdigest()
 
-            # Tạo dữ liệu gửi đến MoMo
             data = {
-
                 'partnerCode': 'MOMO',
                 'partnerName': 'Test',
                 'storeId': 'MomoTestStore',
@@ -358,10 +404,8 @@ def process_payment(request):
                 'signature': signature
             }
 
-            # Gửi yêu cầu thanh toán đến MoMo
-            response = requests.post(endpoint, json=data)
+            response = requests.post(endpoint, json=data, proxies=None)
 
-            # Xử lý kết quả trả về từ MoMo
             if response.status_code == 200:
                 response_data = response.json()
                 if 'payUrl' in response_data:
@@ -384,7 +428,6 @@ def momo_ipn(request):
             order_info = ipn_data.get('orderInfo')
             result_code = ipn_data.get('resultCode')
 
-            print(order_info)
             if result_code == 0:
                 try:
                     resident_fee = ResidentFee.objects.get(id=order_info)

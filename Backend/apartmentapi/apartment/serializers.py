@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from apartment.models import *
 from django.contrib.auth.hashers import make_password
-
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -24,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password']
+        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password','role','avatar']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -138,7 +140,7 @@ class AnswerSerializer(serializers.ModelSerializer):
 
 
 class ReflectionFormSerializer(serializers.ModelSerializer):
-    resident = ResidentSerializer()
+    resident = ResidentSerializer
 
     class Meta:
         model = ReflectionForm

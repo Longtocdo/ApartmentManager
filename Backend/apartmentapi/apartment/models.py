@@ -6,6 +6,7 @@ from enum import Enum
 from django_enum_choices.fields import EnumChoiceField
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.hashers import make_password
+import cloudinary.uploader
 
 
 class User(AbstractUser):

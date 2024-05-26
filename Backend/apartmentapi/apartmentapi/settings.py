@@ -56,8 +56,8 @@ REST_FRAMEWORK = {
 }
 
 # CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
-Client_id = 'B4AiBktDgat7mopb9la0DTltAjLZUx9ad49rwqYu'
-Client_secret = 'UU9ptwUBvT3wWa4jSB5Tl4k0r3hBuB7epFOObdGzAROK8S6Mf5EeHQmPzsDpmATauFjSX0NzLzjovAgIAOMQkov6UP5HJvjg1eKDvNw8hnm4LXl8EdsdEdQzGdC3G362'
+Client_id = 'zdglhYpSitzmzrGCGs8HvcornxO4HngQ5rAVkjqL'
+Client_secret = 'pbkdf2_sha256$720000$grfSW132pU9TxFWrbOsND3$Smkgalo+nWnFtCn0w+sqs+nSQwXjoypFhRW+dIgg4F4='
 
 AUTH_USER_MODEL = 'apartment.User'
 
@@ -117,15 +117,18 @@ DATABASES = {
 
 # ALLOWED_HOSTS = ['192.168.1.109']
 
-
 import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 cloudinary.config(
     cloud_name="dbecreoes",
     api_key="543635266845376",
-    api_secret="32WNqMLBNCYm-wisY_0zr44BNRA"
+    api_secret="32WNqMLBNCYm-wisY_0zr44BNRA",
+    api_proxy="http://proxy.server:3128",
 )
-#the email settings
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# the email settings
 
 
 MAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -166,6 +169,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+
+import os
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = 'static/'
 
 # Default primary key field type
@@ -173,5 +180,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CLIENT_ID = 'jpFk2rrdFNhgimtgApzoZsGlfSfrHhjQ3V21AgwD'
-CLIENT_SECRET = 'JReD8XON7aMZhfuz10qWPwY1jzD6Rn6vsTpKmWGwawTHC8IONqWcVIbZXmLOcKNHfM5Da8T6Qjb8b6naaP6l99FUd903b7jge0mT1bT7GcmrQ6e5xc7zyGI2DZLcEsAu'
+# CLIENT_ID = 'jpFk2rrdFNhgimtgApzoZsGlfSfrHhjQ3V21AgwD'
+# CLIENT_SECRET = 'JReD8XON7aMZhfuz10qWPwY1jzD6Rn6vsTpKmWGwawTHC8IONqWcVIbZXmLOcKNHfM5Da8T6Qjb8b6naaP6l99FUd903b7jge0mT1bT7GcmrQ6e5xc7zyGI2DZLcEsAu'
+
+CLIENT_ID = 'cqspsn8V5FnenW81nHTm65TPC46S84DniTCKsvFp'
+CLIENT_SECRET = 'pbkdf2_sha256$720000$wurLJWA2eBGASrhocdWk6H$53E4mH1iOdbmq8S2dOfkRwBrLhAEcWtfPWTLa9yFuMc='
