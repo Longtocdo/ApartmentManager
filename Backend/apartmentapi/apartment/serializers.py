@@ -5,7 +5,16 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
+
 class UserSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        avatar_url = representation.get('avatar')
+        if avatar_url and avatar_url.startswith('image/upload/'):
+            # Remove 'image/upload/' prefix
+            avatar_url = avatar_url.replace('image/upload/', '', 1)
+            representation['avatar'] = avatar_url
+        return representation
 
     def create(self, validated_data):
         # Kiểm tra xem có phải là superuser không
@@ -26,7 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password','role','avatar']
+        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'role', 'avatar', 'sex']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -43,8 +52,6 @@ class ResidentSerializer(serializers.ModelSerializer):
 
 
 class ApartmentSerializer(serializers.ModelSerializer):
-    resident = ResidentSerializer()
-
     class Meta:
         model = Apartment
         fields = '__all__'
@@ -58,17 +65,17 @@ class ManagerSerializer(serializers.ModelSerializer):
         fields = ['user_info', 'area']
 
 
-class MonthlyFeeSerializer(serializers.ModelSerializer):
+class ServiceSerializer(serializers.ModelSerializer):
     residents = ResidentSerializer(many=True)
 
     class Meta:
-        model = MonthlyFee
+        model = Service
         fields = '__all__'
 
 
 class ResidentFeeSerializer(serializers.ModelSerializer):
     resident = ResidentSerializer
-    fee = MonthlyFeeSerializer
+    fee = ServiceSerializer
 
     class Meta:
         model = ResidentFee
@@ -92,32 +99,31 @@ class ElectronicLockerItemSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Item
         fields = '__all__'
 
 
-class SurveySerializer(serializers.ModelSerializer):
+class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Survey
+        model = Choice
         fields = '__all__'
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    survey = SurveySerializer()
+    choices = ChoiceSerializer
 
     class Meta:
         model = Question
-        fields = '__all__'
+        fields = ['content', 'choices']
 
 
-class ChoiceSerializer(serializers.ModelSerializer):
-    question = QuestionSerializer()
+class SurveySerializer(serializers.ModelSerializer):
+    questions = QuestionSerializer(many=True)
 
     class Meta:
-        model = Choice
-        fields = '__all__'
+        model = Survey
+        fields = ['title', 'questions']
 
 
 class ResponseSerializer(serializers.ModelSerializer):
@@ -139,9 +145,15 @@ class AnswerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ReflectionFormSerializer(serializers.ModelSerializer):
+class ReportSerializer(serializers.ModelSerializer):
     resident = ResidentSerializer
 
     class Meta:
-        model = ReflectionForm
+        model = Report
+        fields = '__all__'
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
         fields = '__all__'

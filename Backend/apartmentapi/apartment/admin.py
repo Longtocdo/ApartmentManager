@@ -30,13 +30,13 @@ class ApartmentAdminSite(admin.AdminSite):
                     group_by = 'quarter'
                 else:
                     group_by = 'year'
-                stats = MonthlyFee.objects.annotate(
+                stats = Service.objects.annotate(
                     **{group_by: models.functions.TruncMonth('created_date')}
                 ).values(group_by).annotate(
                     apartment_count=Count('id')
                 ).order_by(group_by)
 
-                revenue_stats = MonthlyFee.objects.annotate(
+                revenue_stats = Service.objects.annotate(
                     **{group_by: models.functions.TruncMonth('created_date')}
                 ).values(group_by).annotate(
                     total_revenue=Sum('price')
@@ -69,17 +69,18 @@ class ResidentAdmin(admin.ModelAdmin):
 
 
 class ApartmentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'floor', 'room', 'resident']
+    list_display = ['name', 'floor', 'room']
     search_fields = ['name']
     list_filter = ['floor', 'room']
 
 
-class MonthlyFeeAdmin(admin.ModelAdmin):
+class ServiceAdmin(admin.ModelAdmin):
     list_display = ['fee_name', 'price']
     search_fields = ['fee_name']
 
 
 class ResidentFeeAdmin(admin.ModelAdmin):
+
     list_display = ['payment_method', 'payment_proof', 'payment_date', 'status', 'amount', 'resident',
                     'fee']
     search_fields = ['payment_method', 'resident__user_info__first_name',
@@ -94,9 +95,9 @@ class ReservationVehicleAdmin(admin.ModelAdmin):
 
 
 class ElectronicLockerItemAdmin(admin.ModelAdmin):
-    list_display = ['name', 'status', 'apartment']
+    list_display = ['name', 'apartment']
     search_fields = ['name']
-    list_filter = ['status']
+    list_filter = ['name']
 
 
 class ItemAdmin(admin.ModelAdmin):
@@ -118,8 +119,8 @@ class QuestionAdmin(admin.ModelAdmin):
 
 
 class ChoiceAdmin(admin.ModelAdmin):
-    list_display = ['question', 'content', 'letter']
-    search_fields = ['content']
+    list_display = ['question', 'content_choice', 'letter']
+    search_fields = ['content_choice']
     list_filter = ['question']
 
 
@@ -135,7 +136,7 @@ class AnswerAdmin(admin.ModelAdmin):
     list_filter = ['response', 'question', 'choice']
 
 
-class ReflectionFormAdmin(admin.ModelAdmin):
+class ReportAdmin(admin.ModelAdmin):
     list_display = ['resident', 'title', 'content', 'status']  # Sửa 'tittle' thành 'title'
     search_fields = ['title', 'content']  # Sửa 'tittle' thành 'title'
     list_filter = ['status']
@@ -163,7 +164,7 @@ class User_Admin(admin.ModelAdmin):
 
 admin_site.register(User, User_Admin)
 admin_site.register(Resident, ResidentAdmin)
-admin_site.register(MonthlyFee, MonthlyFeeAdmin)
+admin_site.register(Service, ServiceAdmin)
 admin_site.register(Manager, ManagerAdmin)
 admin_site.register(Apartment, ApartmentAdmin)
 admin_site.register(ReservationVehicle, ReservationVehicleAdmin)
@@ -174,5 +175,5 @@ admin_site.register(Survey, SurveyAdmin)
 admin_site.register(Question, QuestionAdmin)
 admin_site.register(Choice, ChoiceAdmin)
 admin_site.register(Response, ResponseAdmin)
-admin_site.register(ReflectionForm, ReflectionFormAdmin)
+admin_site.register(Report, ReportAdmin)
 admin_site.register(Answer, AnswerAdmin)

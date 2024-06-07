@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate, login
 from rest_framework import viewsets, generics, parsers, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response as ResponseRest
+from rest_framework.parsers import JSONParser
 from rest_framework import status
 from django.conf import settings
 from apartment import serializers, paginators, perms
@@ -11,17 +12,24 @@ from django.core.mail import send_mail
 from apartment.models import *
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.shortcuts import get_object_or_404
+import cloudinary.uploader
+
+proxies = {
+    'http': '',
+    'https': ''
+}
 
 
-class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
-    queryset = ResidentFee.objects.filter(status=True)
+class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
+    queryset = ResidentFee.objects.all()
     serializer_class = serializers.ResidentFeeSerializer
+    permission_classes = [permissions.AllowAny]
 
-    # def get_permissions(self):
-    #     if self.action in ['update_paid']:
-    #         return [permissions.IsAuthenticated()]
-    #
-    #     return [permissions.AllowAny()]
+    def get_permissions(self):
+        if self.action in ['get_queryset', 'update_paid']:
+            return [permissions.IsAuthenticated()]
+
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
         queryset = self.queryset
@@ -31,6 +39,22 @@ class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
             if q:
                 queryset = queryset.filter(resident_id=q)
         return queryset
+
+    @action(detail=True, methods=['patch'], url_path='upload_proof', url_name='upload_proof')
+    def upload_proof(self, request, pk):
+        # user_id = request.user.id
+        fee_id = self.get_object()
+        print(fee_id)
+        avatar_file = request.data.get('', None)
+
+        try:
+            residentfee = get_object_or_404(ResidentFee, id=fee_id)
+            new_avatar = cloudinary.uploader.upload(avatar_file)
+            residentfee.payment_proof = new_avatar['secure_url']
+            residentfee.status = True
+            residentfee.save()
+        except ResidentFee.DoesNotExist:
+            return ResponseRest({'detail': 'Resident not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(methods=['patch'], detail=True, url_path='update-paid')
     def update_paid(self, request, pk=None):
@@ -47,51 +71,101 @@ class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
 class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Resident.objects.all()
     serializer_class = serializers.ResidentSerializer
+    parser_classes = [parsers.MultiPartParser, JSONParser]
+    permission_classes = [permissions.IsAuthenticated]
 
     # def get_permissions(self):
-    #     if self.action in ['add_reflections', 'get_residentfees']:
+    #     if self.action in ['add_reflections', 'get_residentfees', 'upload_avatar', 'update_infor', 'get_reflection',
+    #                        'register_vehicle']:
     #         return [permissions.IsAuthenticated()]
     #     return [permissions.AllowAny()]
 
-    @action(methods=['get'], url_path='residentfees', detail=False)
+    @action(methods=['get'], url_path='get_residentfees', detail=False)
     def get_residentfees(self, request):
         user_id = request.user.id
-        resident = get_object_or_404(Resident, user_infor=user_id)
-        residentfees = resident.residentfee_set.filter(status=True)
-        q = request.query_params.get('q')
-        if q:
-            residentfees = residentfees.filter(id=q)
+        bill_status = request.query_params.get('status')
+
+        print(bill_status)
+        resident = get_object_or_404(Resident, user_info=user_id)
+        if bill_status == "payed":
+            residentfees = resident.resident_fees.filter(status=True)
+        else:
+            residentfees = resident.resident_fees.filter(status=False)
         return ResponseRest(serializers.ResidentFeeSerializer(residentfees, many=True).data, status=status.HTTP_200_OK)
 
-    @action(methods=['post'], url_path='residentfeess', detail=True)
-    def add_residentfeess(self, request, pk=None):
+    @action(detail=True, methods=['patch'], url_path='upload_avatar', url_name='upload_avatar')
+    def upload_avatar(self, request, pk):
+        # user_id = request.user.id
+        user_id = self.get_object()
+        print(user_id)
+        avatar_file = request.data.get('avatar', None)
+
+        try:
+            resident = get_object_or_404(Resident, user_info_id=user_id)
+            user = resident.user_info
+            new_avatar = cloudinary.uploader.upload(avatar_file)
+            user.avatar = new_avatar['secure_url']
+            user.save()
+        except Resident.DoesNotExist:
+            return ResponseRest({'detail': 'Resident not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return ResponseRest(serializers.ResidentSerializer(resident).data, status=status.HTTP_200_OK)
+
+    @action(methods=['patch'], url_path='update_infor', detail=True)
+    def update_infor(self, request, pk=None):
+        user_id = self.get_object()
+        try:
+            resident = get_object_or_404(Resident, user_info_id=user_id)
+            user = resident.user_info
+            for k, v in request.data.items():
+                setattr(user, k, v)
+            user.save()
+        except Resident.DoesNotExist:
+            return ResponseRest({'detail': 'Resident not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(methods=['post'], url_path='pay_service', detail=True)
+    def add_residentfee(self, request, pk=None):
         resident = self.get_object()
         residentfee_data = request.data.copy()
-        residentfee_data['resident'] = resident.user_info  # Sử dụng ID của resident
-        serializer = serializers.ResidentFeeSerializer(data=residentfee_data)
-        # Validate và lưu resident fee
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        residentfee_data['resident'] = resident.user_info  # Pass resident ID
 
-        return ResponseRest(serializer.data)
+        # Process fee_id
+        # longpro loi nhan 1 doi tuong
+        fee_id = residentfee_data.get('fee_id')
+        if fee_id:
+            try:
+                service = Service.objects.get(id=fee_id)
+                residentfee_data['fee'] = service  # Set the Service object directly
+            except Service.DoesNotExist:
+                return ResponseRest({'error': 'Invalid fee_id'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return ResponseRest({'error': 'fee_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate and save resident fee
+        serializer = serializers.ResidentFeeSerializer(data=residentfee_data)
+        if serializer.is_valid():
+            serializer.save()
+            return ResponseRest(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return ResponseRest(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'])
-    def get_reflection(self, request, pk=None):
+    def get_report(self, request, pk=None):
         resident = self.get_object()
-        reflection = ReflectionForm.objects.filter(resident=resident).first()
+        reflection = Report.objects.filter(resident=resident).first()
         if reflection:
-            serializer = serializers.ReflectionFormSerializer(reflection)
+            serializer = serializers.ReportSerializer(reflection)
             return ResponseRest(serializer.data, status=status.HTTP_200_OK)
         else:
             return ResponseRest({'message': 'No reflection found'}, status=status.HTTP_404_NOT_FOUND)
 
-    @action(methods=['post'], url_path='reflections', detail=True)
-    def add_reflection(self, request, pk):
+    @action(methods=['post'], url_path='report', detail=True)
+    def add_report(self, request, pk):
         resident = self.get_object()
         reflection_data = request.data.copy()
         reflection_data['resident'] = resident.user_info  # Sử dụng ID của resident
 
-        serializer = serializers.ReflectionFormSerializer(data=reflection_data)
+        serializer = serializers.ReportSerializer(data=reflection_data)
 
         # Validate và lưu reflection
         serializer.is_valid(raise_exception=True)
@@ -112,22 +186,54 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
         else:
             return ResponseRest(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=['post'], url_path='answer', detail=True)
+    def add_answer(self, request, pk=None):
+        resident = self.get_object()
+        serializer = serializers.AnswerSerializer(data=request.data)
+        if serializer.is_valid():
+            answer_data = serializer.validated_data
+            answer_data['resident'] = resident
+            answer = Answer.objects.create(**answer_data)
+            return ResponseRest(serializers.AnswerSerializer(answer).data, status=status.HTTP_200_OK)
+        else:
+            return ResponseRest(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class MonthlyFeeViewSet(viewsets.ViewSet, generics.ListAPIView):
-    queryset = MonthlyFee.objects.all()
-    serializer_class = serializers.MonthlyFeeSerializer
+    @action(methods=['post'], url_path='response', detail=True)
+    def add_response(self, request, pk):
+        resident = self.get_object()
+        response_data = request.data.copy()
+        response_data['resident'] = resident.user_info  # Sử dụng ID của resident
+
+        serializer = serializers.ResponseSerializer(data=response_data)
+
+        # Validate và lưu reflection
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return ResponseRest(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class ReflectionViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView,
-                        generics.CreateAPIView):
-    queryset = ReflectionForm.objects.all()
-    serializer_class = serializers.ReflectionFormSerializer
-    permission_classes = [perms.ReflectionOwner]
+class ServiceViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Service.objects.all()
+    serializer_class = serializers.ServiceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ReportViewSet(viewsets.ViewSet, generics.DestroyAPIView, generics.UpdateAPIView,
+                    generics.CreateAPIView):
+    queryset = Report.objects.all()
+    serializer_class = serializers.ReportSerializer
+    permission_classes = [perms.ReportOwner]
 
 
 class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
-    queryset = ElectronicLockerItem.objects.filter(status=True)
+    queryset = ElectronicLockerItem.objects.all()
     serializer_class = serializers.ElectronicLockerItemSerializer
+
+    def get_permissions(self):
+        if self.action in ['get_items', 'mark_as_received']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     #     course
     @action(methods=['get'], url_path='items', detail=True)
@@ -184,11 +290,21 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
 class ApartmentViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
     queryset = Apartment.objects.all()
     serializer_class = serializers.ApartmentSerializer
+    permission_classes = [permissions.AllowAny]
 
 
-class ItemViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
+class ItemViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Item.objects.all()
     serializer_class = serializers.ItemSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        if self.action.__eq__('list'):
+            q = self.request.query_params.get('q')
+            if q:
+                queryset = queryset.filter(item_name__icontains=q)
+        return queryset
 
 
 class ReservationViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -199,34 +315,19 @@ class ReservationViewSet(viewsets.ViewSet, generics.ListAPIView):
 class SurveyViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Survey.objects.all()
     serializer_class = serializers.SurveySerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMixin):
-    queryset = User.objects.filter(is_active=True)
+    queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
-    parser_classes = [parsers.MultiPartParser, ]
+    parser_classes = [parsers.MultiPartParser, JSONParser]
 
-    # def get_permissions(self):
-    #     #     if self.action in ['get_current_user']:
-    #     #         return [permissions.IsAuthenticated()]
-    #     #
-    #     #     return [permissions.AllowAny()]
-    # @action(detail=False, methods=['post'], url_path='login', url_name='login')
-    # def login_user(self, request):
-    #     username = request.data.get('username')
-    #     password = request.data.get('password')
-    #
-    #     if not username or not password:
-    #         return ResponseRest({"error": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
-    #
-    #     user = authenticate(username=username, password=password)
-    #
-    #     if user is not None:
-    #         login(request, user)
-    #         serializer = serializers.UserSerializer(user, context={'request': request})
-    #         return ResponseRest(serializer.data, status=status.HTTP_200_OK)
-    #     else:
-    #         return ResponseRest({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+    def get_permissions(self):
+        if self.action in ['get_current_user', 'register_user']:
+            return [perms.AdminOwner()]
+
+        return [permissions.IsAuthenticated()]
 
     @action(detail=False, methods=['post'], url_path='register_user', url_name='register_user')
     def register_user(self, request):
@@ -255,7 +356,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
         except Exception as e:
             return ResponseRest(dict(error=str(e)), status=status.HTTP_403_FORBIDDEN)
 
-    @action(detail=False, methods=['patch'], url_path='update_password', url_name='change_password')
+    @action(detail=False, methods=['patch'], url_path='update_', url_name='change_password')
     def update_password(self, request):
         user_id = request.data.get('id', None)
         old_password = request.data.get('old_password', None)
@@ -281,21 +382,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
             return ResponseRest({'detail': 'Password change not required'}, status=status.HTTP_400_BAD_REQUEST)
         # Hàm upload avatar
 
-    @action(detail=True, methods=['post'], url_path='upload_avatar', url_name='upload_avatar')
-    def upload_avatar(self, request, pk=None):
-        user_id = request.data.get('id', None)
-        avatar_file = request.data.get('avatar')
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return ResponseRest({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        new_avatar = cloudinary.uploader.upload(avatar_file)
-        user.avatar = new_avatar['secure_url']
-        user.save()
-        return ResponseRest({'detail': 'Avatar uploaded successfully'}, status=status.HTTP_200_OK)
-
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
     def get_current_user(self, request):
         user = request.user
@@ -305,6 +391,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
             user.save()
 
         return ResponseRest(serializers.UserSerializer(user).data)
+        # return ResponseRest({'ms':'có cc tao'})
 
     @action(detail=False, methods=['post'], url_path='forgot_password', url_name='forgot_password')
     def forgot_password(self, request):
@@ -346,6 +433,12 @@ class ResponseViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     serializer_class = serializers.ResponseSerializer
 
 
+class PostViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Post.objects.all()
+    serializer_class = serializers.PostSerializer
+    pagination_class = paginators.PostPaginator
+
+
 import hmac
 import hashlib
 import json
@@ -353,95 +446,98 @@ import requests
 import uuid
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from apartment.models import ResidentFee
 
 
 # MOMO
-@csrf_exempt
-def process_payment(request):
-    if request.method == 'POST':
-        try:
-            payment_data = json.loads(request.body)
-            amount = payment_data.get('price')
-            resident_fee_id = payment_data.get('resident_fee_id')
+class MomoViewSet(viewsets.ViewSet):
+    serializer_class = serializers.ResidentFeeSerializer
 
+    @action(detail=False, methods=['post'], url_path='process_payment', url_name='process_payment')
+    @csrf_exempt
+    def process_payment(self, request):
+        if request.method == 'POST':
             try:
-                resident_fee = ResidentFee.objects.get(id=resident_fee_id)
-            except ResidentFee.DoesNotExist:
-                return JsonResponse({'error': 'ResidentFee not found'}, status=404)
+                payment_data = request.data  # Sử dụng request.data thay vì json.loads(request.data)
+                amount = payment_data.get('price')
+                resident_fee_id = payment_data.get('resident_fee_id')
 
-            expected_amount = resident_fee.fee.price
-            if amount != expected_amount:
-                return JsonResponse({'error': 'Amount does not match'}, status=400)
-
-            order_id = str(uuid.uuid4())
-            request_id = str(uuid.uuid4())
-
-            endpoint = "https://test-payment.momo.vn/v2/gateway/api/create"
-            access_key = "F8BBA842ECF85"
-            secret_key = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
-            order_info = str(resident_fee_id)
-            redirect_url = "http://127.0.0.1:8000/"
-            ipn_url = "https://msang2003.pythonanywhere.com/api/momo_ipn/"
-
-            raw_signature = f"accessKey={access_key}&amount={amount}&extraData=&ipnUrl={ipn_url}&orderId={order_id}&orderInfo={order_info}&partnerCode=MOMO&redirectUrl={redirect_url}&requestId={request_id}&requestType=captureWallet"
-            h = hmac.new(bytes(secret_key, 'ascii'), bytes(raw_signature, 'ascii'), hashlib.sha256)
-            signature = h.hexdigest()
-
-            data = {
-                'partnerCode': 'MOMO',
-                'partnerName': 'Test',
-                'storeId': 'MomoTestStore',
-                'requestId': request_id,
-                'amount': str(amount),
-                'orderId': order_id,
-                'orderInfo': order_info,
-                'redirectUrl': redirect_url,
-                'ipnUrl': ipn_url,
-                'lang': 'vi',
-                'extraData': '',
-                'requestType': 'captureWallet',
-                'signature': signature
-            }
-
-            response = requests.post(endpoint, json=data, proxies=None)
-
-            if response.status_code == 200:
-                response_data = response.json()
-                if 'payUrl' in response_data:
-                    return JsonResponse({'payUrl': response_data['payUrl']})
-                else:
-                    return JsonResponse({'error': 'Failed to process payment'}, status=400)
-            else:
-                return JsonResponse({'error': 'Failed to communicate with MoMo'}, status=500)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
-    else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
-
-
-@csrf_exempt
-def momo_ipn(request):
-    if request.method == 'POST':
-        try:
-            ipn_data = json.loads(request.body)
-            order_info = ipn_data.get('orderInfo')
-            result_code = ipn_data.get('resultCode')
-
-            if result_code == 0:
                 try:
-                    resident_fee = ResidentFee.objects.get(id=order_info)
-                    resident_fee.status = True
-                    resident_fee.save()
-                    return JsonResponse({'message': 'Payment successful and status updated'}, status=200)
+                    resident_fee = ResidentFee.objects.get(id=resident_fee_id)
                 except ResidentFee.DoesNotExist:
                     return JsonResponse({'error': 'ResidentFee not found'}, status=404)
-            else:
-                return JsonResponse({'error': 'Payment failed'}, status=400)
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
-    else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+                expected_amount = resident_fee.fee.price
+                if amount != expected_amount:
+                    return JsonResponse({'error': 'Amount does not match'}, status=400)
+
+                order_id = str(uuid.uuid4())
+                request_id = str(uuid.uuid4())
+
+                endpoint = "https://test-payment.momo.vn/v2/gateway/api/create"
+                access_key = "F8BBA842ECF85"
+                secret_key = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
+                order_info = str(resident_fee_id)
+                redirect_url = "https://longtocdo107.pythonanywhere.com/"
+                ipn_url = "http://192.168.1.8:800/momo/momo_ipn/"
+
+                raw_signature = f"accessKey={access_key}&amount={amount}&extraData=&ipnUrl={ipn_url}&orderId={order_id}&orderInfo={order_info}&partnerCode=MOMO&redirectUrl={redirect_url}&requestId={request_id}&requestType=captureWallet"
+                h = hmac.new(bytes(secret_key, 'ascii'), bytes(raw_signature, 'ascii'), hashlib.sha256)
+                signature = h.hexdigest()
+
+                data = {
+                    'partnerCode': 'MOMO',
+                    'partnerName': 'Test',
+                    'storeId': 'MomoTestStore',
+                    'requestId': request_id,
+                    'amount': str(amount),
+                    'orderId': order_id,
+                    'orderInfo': order_info,
+                    'redirectUrl': redirect_url,
+                    'ipnUrl': ipn_url,
+                    'lang': 'vi',
+                    'extraData': '',
+                    'requestType': 'captureWallet',
+                    'signature': signature
+                }
+
+                response = requests.post(endpoint, json=data, proxies=None)
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    if 'payUrl' in response_data:
+                        return JsonResponse({'payUrl': response_data['payUrl']})
+                    else:
+                        return JsonResponse({'error': 'Failed to process payment'}, status=400)
+                else:
+                    return JsonResponse({'error': 'Failed to communicate with MoMo'}, status=500)
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    @action(detail=False, methods=['post'], url_path='momo_ipn')
+    @csrf_exempt
+    def momo_ipn(self, request):
+        if request.method == 'POST':
+            try:
+                ipn_data = request.data  # Sử dụng request.data thay vì json.loads(request.data)
+                order_info = ipn_data.get('orderInfo')
+                result_code = ipn_data.get('resultCode')
+
+                if result_code == 0:
+                    try:
+                        resident_fee = ResidentFee.objects.get(id=order_info)
+                        resident_fee.status = resident_fee.EnumStatusFee.DONE
+                        resident_fee.save()
+                        return JsonResponse({'message': 'Payment successful and status updated'}, status=200)
+                    except ResidentFee.DoesNotExist:
+                        return JsonResponse({'error': 'ResidentFee not found'}, status=404)
+                else:
+                    return JsonResponse({'error': 'Payment failed'}, status=400)
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        else:
+            return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 # import hmac

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,9 +25,12 @@ MEDIA_ROOT = '%s/apartment/static/' % BASE_DIR
 SECRET_KEY = 'django-insecure-aa$3sc8quxnhel+xv)^gyjje5ez123w3&431*erx19o=d&akid'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+
+
 DEBUG = True
 
-ALLOWED_HOSTS = []  # '192.168.1.74'
+ALLOWED_HOSTS = ['192.168.1.8']  # '192.168.1.74'
+# CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000/', 'https://7f90-171-243-49-67.ngrok-free.app']
 
 import pymysql
 
@@ -56,8 +60,7 @@ REST_FRAMEWORK = {
 }
 
 # CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
-Client_id = 'zdglhYpSitzmzrGCGs8HvcornxO4HngQ5rAVkjqL'
-Client_secret = 'pbkdf2_sha256$720000$grfSW132pU9TxFWrbOsND3$Smkgalo+nWnFtCn0w+sqs+nSQwXjoypFhRW+dIgg4F4='
+
 
 AUTH_USER_MODEL = 'apartment.User'
 
@@ -70,6 +73,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 # settings.py
 
 ZALOPAY_CONFIG = {
@@ -118,15 +124,16 @@ DATABASES = {
 # ALLOWED_HOSTS = ['192.168.1.109']
 
 import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 
 cloudinary.config(
     cloud_name="dbecreoes",
     api_key="543635266845376",
     api_secret="32WNqMLBNCYm-wisY_0zr44BNRA",
-    api_proxy="http://proxy.server:3128",
+    # api_proxy="http://proxy.server:3128",
 )
+import cloudinary.uploader
+import cloudinary.api
+
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # the email settings
 
@@ -174,6 +181,8 @@ import os
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = 'static/'
+# os.environ['http_proxy'] = 'http://proxy.server:3128'
+# os.environ['https_proxy'] = 'http://proxy.server:3128'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -183,5 +192,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CLIENT_ID = 'jpFk2rrdFNhgimtgApzoZsGlfSfrHhjQ3V21AgwD'
 # CLIENT_SECRET = 'JReD8XON7aMZhfuz10qWPwY1jzD6Rn6vsTpKmWGwawTHC8IONqWcVIbZXmLOcKNHfM5Da8T6Qjb8b6naaP6l99FUd903b7jge0mT1bT7GcmrQ6e5xc7zyGI2DZLcEsAu'
 
-CLIENT_ID = 'cqspsn8V5FnenW81nHTm65TPC46S84DniTCKsvFp'
-CLIENT_SECRET = 'pbkdf2_sha256$720000$wurLJWA2eBGASrhocdWk6H$53E4mH1iOdbmq8S2dOfkRwBrLhAEcWtfPWTLa9yFuMc='
+CLIENT_ID = 'WItk43G2WXhYgKd5aYYydNjuxXAnWPgAN83ATDhy'
+CLIENT_SECRET = 'EeW4ucZ73inoxLIPk8isMHVWJi8tpc0o0Ck4q3zXN0wcqwtD3hcqBHDhk2nbf7s25ycdWWTMgmvV2kiWWRWZpWd8HQdTtxOEsA3DBmdBVUI1loF8OZrEV2GYQPUJhbhO'

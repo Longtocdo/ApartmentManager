@@ -11,31 +11,23 @@ import cloudinary.uploader
 
 class User(AbstractUser):
     class EnumRole(models.TextChoices):
-        RESIDENT = 'Resident'
-        MANAGER = 'Manager'
+        RESIDENT = 'Cư Dân'
+        MANAGER = 'Quản Lý'
 
     class EnumSex(models.TextChoices):
-        MALE = 'Male'
-        FEMALE = 'Female'
+        MALE = 'Nam'
+        FEMALE = 'Nữ'
 
     role = models.CharField(max_length=20, choices=EnumRole.choices, default=EnumRole.RESIDENT)
     phone = models.CharField(max_length=15, null=True)
     sex = models.CharField(max_length=20, choices=EnumSex.choices, default=EnumSex.MALE)
-    avatar = CloudinaryField('avatar', null=True)
+    avatar = CloudinaryField(null=True)
     created = models.DateField(auto_now_add=True, null=True)
-    change_password_required = models.BooleanField(default=True)
+    is_first_login = models.BooleanField(default=True)
     is_locked = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
-
-
-class Resident(models.Model):
-    user_info = models.OneToOneField(User, related_name='resident_profile', primary_key=True, on_delete=models.CASCADE,
-                                     null=False)
-
-    def __str__(self):
-        return "RD." + " " + self.user_info.first_name + " " + self.user_info.last_name
 
 
 class Apartment(models.Model):
@@ -47,13 +39,21 @@ class Apartment(models.Model):
     name = models.CharField(max_length=20, unique=True)
     floor = models.IntegerField(default=1)
     room = models.IntegerField(choices=EnumRoom.choices, default=EnumRoom.ROOM_2)
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='apartments')
 
     def management_fee(self):
         return self.management_service.price * self.room
 
     def __str__(self):
         return self.name
+
+
+class Resident(models.Model):
+    user_info = models.OneToOneField(User, related_name='resident_profile', primary_key=True, on_delete=models.CASCADE,
+                                     null=False)
+    apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, null=True, related_name='apartments')
+
+    def __str__(self):
+        return "RD." + " " + self.user_info.first_name + " " + self.user_info.last_name
 
 
 class Manager(models.Model):
@@ -66,17 +66,24 @@ class Manager(models.Model):
 
 
 class BaseModel(models.Model):
-    created_date = models.DateTimeField(auto_now_add=True, null=True)
-    updated_date = models.DateTimeField(auto_now=True, null=True)
+    created_date = models.DateField(auto_now_add=True, null=True)
+    updated_date = models.DateField(auto_now=True, null=True)
 
     class Meta:
         abstract = True
 
 
-class MonthlyFee(BaseModel):
+class Service(BaseModel):
+    # doi ten thanh service longpro
+    class EnumServiceType(models.TextChoices):
+        Svc1 = 'Tiền Nhà', 'Tiền nhà'
+        Svc2 = 'Tiền Điện', 'Tiền Điện'
+
     fee_name = models.CharField(max_length=30)
     price = models.IntegerField()
-    residents = models.ManyToManyField(Resident, through='ResidentFee', related_name='monthly_fees')
+    types = models.CharField(max_length=50, choices=EnumServiceType.choices, default=EnumServiceType.Svc1)
+
+    residents = models.ManyToManyField(Resident, through='ResidentFee', related_name='service')
 
     def __str__(self):
         return self.fee_name
@@ -85,22 +92,27 @@ class MonthlyFee(BaseModel):
 class ResidentFee(models.Model):
     class EnumPayment(models.TextChoices):
         PM1_1 = 'Chuyển khoản Ngân Hàng', 'Chuyển khoản Ngân Hàng'
-        PM2_2 = 'Chuyển khoản Ngân 4', 'Chuyển khoản MoMo'
-        PM3_3 = 'Chuyển khoản Ngân 2', 'Tiền mặt'
+        PM2_2 = 'Chuyển khoản Momo', 'Chuyển khoản MoMo'
 
-    payment_method = models.CharField(choices=EnumPayment.choices, default=EnumPayment.PM1_1, max_length=50)
+    class EnumStatusFee(models.TextChoices):
+        PENDING = 'Đang chờ xử lý', 'Đang xử lý'
+        DENY = 'Không thể xử lý', 'Thất Bại'
+        DONE = 'Đã đăng ký', 'Thành Công'
+
+    payment_method = models.CharField(choices=EnumPayment.choices, max_length=50, null=True)
     payment_proof = CloudinaryField(null=True)
-    payment_date = models.DateField(auto_now_add=True)
-    status = models.BooleanField(default=False)
+    payment_date = models.DateField(auto_now_add=True, null=True)
+    created_date = models.DateField(auto_now_add=True, null=True)
+    status = models.CharField(max_length=50, choices=EnumStatusFee.choices, default=EnumStatusFee.PENDING)
     amount = models.IntegerField(default=1)
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='resident_fees')
-    fee = models.ForeignKey(MonthlyFee, on_delete=models.CASCADE, related_name='resident_fees')
+    fee = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='resident_fees')
 
     def __str__(self):
         return self.resident.__str__() + " / " + self.fee.fee_name
 
 
-class ReservationVehicle(MonthlyFee):
+class ReservationVehicle(Service):
     class EnumStatus(models.TextChoices):
         PENDING = 'Đang chờ xử lý', 'Đang chờ xử lý'
         DENY = 'Không thể xử lý', 'Không thể xử lý'
@@ -116,7 +128,7 @@ class ReservationVehicle(MonthlyFee):
 
 class ElectronicLockerItem(BaseModel):
     name = models.CharField(max_length=30, default='Tủ đồ')
-    status = models.BooleanField(default=False)
+    # longpro
 
     apartment = models.OneToOneField(Apartment, related_name='electronic_locker', null=False, on_delete=models.CASCADE)
 
@@ -128,7 +140,8 @@ class Item(BaseModel):
     status = models.BooleanField(default=True)
     item_name = models.CharField(max_length=255, null=True, default='Tên sản phẩm')
     electronic_lock = models.ForeignKey(ElectronicLockerItem, on_delete=models.CASCADE, related_name='items')
-    received_date = models.DateTimeField(auto_now=True, null=True)
+    received_date = models.DateField(auto_now=True, null=True)
+    created_date = models.DateField(auto_now=True)
 
     def __str__(self):
         return self.item_name
@@ -156,14 +169,17 @@ class Question(BaseModel):
 class Choice(BaseModel):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
 
-    content = models.CharField(max_length=30, primary_key=True)
+    content_choice = models.CharField(max_length=30, primary_key=True)
     letter = models.CharField(max_length=1, help_text="A, B, C, D")
+
+    def __str__(self):
+        return self.content_choice
 
 
 class Response(models.Model):
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
-    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='responses')
-    submitted_at = models.DateTimeField(auto_now_add=True)
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='response')
+    resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='response')
+    submitted_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return str(self.survey) + " of" + " " + str(self.resident)
@@ -181,7 +197,8 @@ class Answer(models.Model):
         return f"{self.question.content} - {self.choice.letter}"
 
 
-class ReflectionForm(BaseModel):
+class Report(BaseModel):
+    # doi ten Report
     class EnumStatus(models.TextChoices):
         PENDING = 'Đang chờ xử lý'
         DENY = 'Không thể xử lý'
@@ -192,6 +209,17 @@ class ReflectionForm(BaseModel):
     title = models.CharField(max_length=30)
     content = models.TextField(max_length=50, null=True)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)
+
+    def __str__(self):
+        return self.title.__str__()
+
+
+class Post(BaseModel):
+    id = models.IntegerField(primary_key=True)
+    title = models.CharField(max_length=40, null=True)
+    content = models.CharField(max_length=50, null=True)
+    image = CloudinaryField(null=True)
+    manager = models.ForeignKey(Manager, on_delete=models.CASCADE, related_name='post_manager')
 
     def __str__(self):
         return self.title.__str__()
