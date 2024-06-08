@@ -6,372 +6,250 @@ import { Appbar, Card, Title, Paragraph, Button, Avatar, List, IconButton } from
 import { StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TouchableOpacity } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import { BillApis } from '../../core/APIs/BillAPIs';
 
 
-const Menu = [
-  {
-    name: 'Thanh toán',
-    avatar: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\icon-invoice.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />,
 
-  },
-  {
-    name: 'Dịch vụ',
-    avatar: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\icon-bill.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
-  }, {
-    name: 'Phản ánh',
-    avatar: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\icon-phananh.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
-  }, {
-    name: 'Tiện ích',
-    avatar: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\icon-bill.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
-  },
-]
+export default PaymentDetailScreen = ({ navigation }) => {
+  const route = useRoute();
+  const { billId, isPayed, paymentMethod } = route.params;
+  
+  const [bill, setBill] = React.useState({})
 
+  const [paymentType, setPaymentType] = React.useState('Chuyển khoản ngân hàng')
 
-const TienIch = [
-  {
-    name: 'Thông tin covid',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\covid.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+  const loadBill = async(id) => {
+    try {
+      const res = await BillApis.getBillById(id)
+      setBill(res.data)
+      console.log(res.data)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
-  },
-  {
-    name: 'Khai báo y tế',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\injection.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+  React.useEffect(() => {
+    loadBill(billId??undefined);
 
-  },
-  {
-    name: 'Hotline',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\hotline.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+    // setPaymentType(paymentMethod??"Momo")
+  },[])
 
-  },
-  {
-    name: 'Góp ý',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\mailbox.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+  const [selectedImage, setSelectedImage] = React.useState(null);
 
-  },
-  {
-    name: 'Thông tin covid',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\covid.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
 
-  },
-  {
-    name: 'Thông tin covid',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\covid.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+    if (!result.cancelled) {
+      console.log('Đường dẫn hình ảnh:', result.assets[0].uri);
 
-  },
-  {
-    name: 'Thông tin covid',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\covid.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+      setSelectedImage(result.assets[0].uri)
 
-  },
-  {
-    name: 'Thông tin covid',
-    image: <Image
-      source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\covid.png')}
-      style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
-      resizeMode="cover"
-    />
+      const formData = new FormData();
+      formData.append('id', '1'); 
+      formData.append('avatar', {
+        uri: result.assets[0].uri,
+        name: 'userProfile.jpg',
+        type: 'image/jpge',
+      });
 
-  },
+      try {
 
-]
-export default PaymentDetailScreen = ({ navigation }) => (
-  <ScrollView style={styles.container} >
-    <View style={styles.header}>
-      <ImageBackground source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner.png')} style={styles.image}>
-        <Card.Title style={styles.card}
-          title="Mr.Sang Tower"
-          titleStyle={{ fontSize: 14, fontWeight: 'bold', color: 'white', marginLeft: -10 }}
-          left={(props) => <Avatar.Image size={35} source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\logo.png')} />}
-        />
+        const res = await BillApis.updateProofById(billId, formData);
+        
+      } catch (error) {
+        console.log('Lỗi upload')
+      }
+    }
+  };
 
-        <Card.Title style={styles.cardInfor}
-          title="Trần Minh Bảo Long"
-          subtitle='B103 - Thành viên'
-          titleStyle={{ fontSize: 16, fontWeight: 'bold', color: 'white' }}
-          subtitleStyle={{ fontSize: 12, color: 'white', marginTop: -5 }}
-        />
-      </ImageBackground>
-    </View>
-    <View style={styles.body}>
-      <View style={styles.menu}>
-        {Menu.map(c => <View id={c.name} style={{ alignItems: 'center', width: '25%', paddingBottom: 10 }}>
-          <TouchableOpacity onPress={()=>{navigation.navigate('PaymentScreen')}}>
-            {c.avatar}
-            <Text>{c.name}</Text>
-          </TouchableOpacity>
-        </View>)}
-      </View>
-
-
-      <View style={styles.alert}>
-        <Button icon="bell" size={25}>Có 3 lời nhắc</Button>
-        <Button onPress={() => { }}>Xem thêm </Button>
-      </View>
-
-      <View>
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-          <Image
-            source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner-1.png')}
-            style={{ borderRadius: 5, margin: 5 }}
-          />
-
-          <Image
-            source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner-1.png')}
-            style={{ borderRadius: 5, margin: 5 }}
-          />
-
-          <Image
-            source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner-1.png')}
-            style={{ borderRadius: 5, margin: 5 }}
-          />
-
-          <Image
-            source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner-1.png')}
-            style={{ borderRadius: 5, margin: 5 }}
-          />
-        </ScrollView>
-      </View>
-      <View>
-        <Text style={{ fontWeight: '600', fontSize: 15, marginTop: 10 }}>Nổi bật </Text>
-        <View style={styles.tienIch}>
-
-          {TienIch.map(c => <View id={c.name} style={{ alignItems: 'center', width: '25%', paddingBottom: 10 }}>
-            {c.image}
-            <Text>{c.name}</Text>
-          </View>)}
-        </View>
-      </View>
-      <View style={{ marginTop: 15 }}>
-        <Text>Dịch vụ tòa nhà</Text>
+  return (
+    <ScrollView style={styles.container} >
+      {!isPayed &&
         <View>
+          <View>
+            <Text style={styles.tittle}>Hình thức thanh toán</Text>
+          </View>
           <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-
-            <Card style={{
-              width: 250, margin: 10, padding: 5, backgroundColor: 'white', shadowColor: 'black',
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}>
-              <View style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', marginLeft: -10 }}>
-                <IconButton icon='chat' />
-                <Text style={{ fontSize: 14 }}>Rửa xe 24h</Text>
+            <TouchableOpacity onPress={() => { setPaymentType('Momo') }}>
+              <View>
+                <Card.Title style={styles.card}
+                  title="Ví Momo"
+                  titleStyle={{ fontSize: 14, fontWeight: 'bold', color: 'black' }}
+                  subtitle='Miễn phí'
+                  left={(props) => <Avatar.Image size={40} source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\logo.png')} />}
+                />
               </View>
-
-              <View style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14 }}>100.000đ</Text>
-                <Button style={{ color: 'red' }} onPress={() => { }}>Đăng ký </Button>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setPaymentType('Zalo') }}>
+              <View>
+                <Card.Title style={styles.card}
+                  title="Ví ZaloPay"
+                  titleStyle={{ fontSize: 14, fontWeight: 'bold', color: 'black' }}
+                  subtitle='Miễn phí'
+                  left={(props) => <Avatar.Image size={40} source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\logo.png')} />}
+                />
               </View>
-            </Card>
-
-
-            <Card style={{
-              width: 250, margin: 10, padding: 5, backgroundColor: 'white', shadowColor: 'black',
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}>
-              <View style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', marginLeft: -10 }}>
-                <IconButton icon='chat' />
-                <Text style={{ fontSize: 14 }}>Rửa xe 24h</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setPaymentType('Chuyển khoản ngân hàng') }}>
+              <View>
+                <Card.Title style={styles.card}
+                  title="Chuyển khoản"
+                  titleStyle={{ fontSize: 14, fontWeight: 'bold', color: 'black' }}
+                  subtitle='Miễn phí'
+                  left={(props) => <Avatar.Image size={40} source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\logo.png')} />}
+                />
               </View>
-
-              <View style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14 }}>100.000đ</Text>
-                <Button style={{ color: 'red' }} onPress={() => { }}>Đăng ký </Button>
-              </View>
-            </Card>
-
-
-            <Card style={{
-              width: 250, margin: 10, padding: 5, backgroundColor: 'white', shadowColor: 'black',
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}>
-              <View style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', marginLeft: -10 }}>
-                <IconButton icon='chat' />
-                <Text style={{ fontSize: 14 }}>Rửa xe 24h</Text>
-              </View>
-
-              <View style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14 }}>100.000đ</Text>
-                <Button style={{ color: 'red' }} onPress={() => { }}>Đăng ký </Button>
-              </View>
-            </Card>
+            </TouchableOpacity>
           </ScrollView>
+        </View>}
+
+      <View >
+        <Text style={styles.tittle}>Chi tiết  giao dịch</Text>
+        <View style={styles.detail}>
+          <View style={styles.item}>
+            <Text style={styles.tittle}>Tên dịch vụ</Text>
+            <View></View>
+            <Text style={styles.content}>{bill?.fee?.fee_name}</Text>
+          </View>
+
+          <View style={styles.item}>
+            <Text style={styles.tittle}>Thời gian</Text>
+            <View></View>
+            <Text style={styles.content}>{bill?.fee?.created_date}</Text>
+          </View>
+
+          <View style={styles.item}>
+            <Text style={styles.tittle}>Giá</Text>
+            <View></View>
+            <Text style={styles.content}>{`${bill?.fee?.price.toLocaleString('vi-VN') + 'đ'}`}</Text>
+          </View>
+
+          <View style={styles.item}>
+            <Text style={styles.tittle}>Số lượng </Text>
+            <View></View>
+            <Text style={styles.content}>{bill?.amount}</Text>
+          </View>
+
+          <View style={styles.item}>
+            <Text style={styles.tittle}>Tạm tính</Text>
+            <View></View>
+            <Text style={styles.content}>{`${bill?.fee?.price.toLocaleString('vi-VN') + 'đ'}`}</Text>
+          </View>
+          <View style={styles.item}>
+            <Text style={styles.tittle}>Hình thức thanh toán </Text>
+            <View></View>
+            <Text style={styles.content}>{paymentMethod}</Text>
+          </View>
+
+          {isPayed &&
+            <View style={styles.item}>
+              <Text style={styles.tittle}>Thanh toán ngày </Text>
+              <View></View>
+              <Text style={styles.content}>{bill.payment_date}</Text>
+            </View>
+
+          }
+          {paymentType == 'Chuyển khoản ngân hàng' &&
+
+            <>
+              <View style={styles.item}>
+                <Text style={styles.tittle}>Ngân hàng</Text>
+                <View></View>
+                <Text style={styles.content}>Sacombank</Text>
+              </View>
+              <View style={styles.item}>
+                <Text style={styles.tittle}>Số tài khoản</Text>
+                <View></View>
+                <Text style={styles.content}>034285972384</Text>
+              </View>
+            </>
+          }
         </View>
-
       </View>
+      {!isPayed &&
+        <>
+          {paymentType !== 'Chuyển khoản ngân hàng' ?
+            <TouchableOpacity>
+              <Text style={styles.confirm}>Xác nhận</Text>
+            </TouchableOpacity> :
 
-      <View style={{ marginTop: 15 }}>
-        <Text>Dịch vụ tòa nhà</Text>
-        <View>
-          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity onPress={pickImage}>
+              <Text style={styles.confirm}>Upload ảnh xác minh</Text>
+            </TouchableOpacity>
+          }
+        </>
+      }
 
-            <Card style={{
-              width: 250, margin: 10, padding: 5, backgroundColor: 'white', shadowColor: 'black',
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}>
-              <View style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', marginLeft: -10 }}>
-                <IconButton icon='chat' />
-                <Text style={{ fontSize: 14 }}>Rửa xe 24h</Text>
-              </View>
+{/* <Button onPress={pickImage}>Upload ảnh</Button>
 
-              <View style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14 }}>100.000đ</Text>
-                <Button style={{ color: 'red' }} onPress={() => { }}>Đăng ký </Button>
-              </View>
-            </Card>
-
-
-            <Card style={{
-              width: 250, margin: 10, padding: 5, backgroundColor: 'white', shadowColor: 'black',
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}>
-              <View style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', marginLeft: -10 }}>
-                <IconButton icon='chat' />
-                <Text style={{ fontSize: 14 }}>Rửa xe 24h</Text>
-              </View>
-
-              <View style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14 }}>100.000đ</Text>
-                <Button style={{ color: 'red' }} onPress={() => { }}>Đăng ký </Button>
-              </View>
-            </Card>
-
-
-            <Card style={{
-              width: 250, margin: 10, padding: 5, backgroundColor: 'white', shadowColor: 'black',
-              shadowOffset: { width: 1, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}>
-              <View style={{ display: 'flex', justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', marginLeft: -10 }}>
-                <IconButton icon='chat' />
-                <Text style={{ fontSize: 14 }}>Rửa xe 24h</Text>
-              </View>
-
-              <View style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14 }}>100.000đ</Text>
-                <Button style={{ color: 'red' }} onPress={() => { }}>Đăng ký </Button>
-              </View>
-            </Card>
-          </ScrollView>
-        </View>
-
-      </View>
-    </View>
-  </ScrollView>
-);
+{selectedImage && (
+  <Image source={{ uri: selectedImage }} style={{ width: 200, height: 200 }} />
+)} */}
+    </ScrollView>
+  );
+}
 
 
 const styles = StyleSheet.create({
   container: {
+    display: 'flex',
+    padding: 20
   },
-  header: {
-    height: 145
-  },
-  body: {
-    backgroundColor: '#f0f5f7',
-    marginTop: -15,
-    borderRadius: 15,
-    padding: 10,
-    paddingTop: 15
-  },
-  image: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
+  tittle: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   card: {
-    width: '100%',
-    height: 30,
-    borderRadius: 10,
+    borderRadius: 15,
+    marginTop: 20,
+    marginRight: 10,
+    marginBottom: 20,
+    backgroundColor: 'white',
   },
-  cardInfor: {
-    marginTop: -15,
+  detail: {
+    marginTop: 20,
+    backgroundColor: 'lightblue',
+    flexGrow: 1,
+    borderRadius: 15,
+    padding: 10,
+    backgroundColor: 'white', shadowColor: 'blue',
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  menu: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
-
-  },
-  tienIch: {
+  item: {
     display: 'flex',
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-
-  },
-  alert: {
-    flexDirection: 'row',
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFE0',
-    margin: 10,
+    flexDirection: 'row',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderColor: 'whitesmoke'
   },
-  title: {
-    fontSize: 14,
+  confirm: {
+    
+    color: 'white',
+    backgroundColor: 'blue',
+    textAlign: 'center',
+    fontWeight: '700',
+    padding: 15,
+    marginTop: 25,
+    borderRadius: 15,
+  },
+  tittle:{
+    fontSize: 16
+  },
+  content:{
+    fontSize: 16, 
+    fontWeight: '700',
   },
 
 });

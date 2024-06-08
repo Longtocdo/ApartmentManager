@@ -10,28 +10,49 @@ import BackButton from '../../components/BackButton'
 import { theme } from '../../core/theme'
 import { emailValidator } from '../../helpers/emailValidator'
 import { passwordValidator } from '../../helpers/passwordValidator'
+import { useDispatch } from 'react-redux';
+import { userActions } from '../../core/redux/reducers/inforReducer'
+import axios from 'axios'
 
 
-export default function LoginScreen({  navigation}) {
+export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState({ value: '', error: '' })
   const [password, setPassword] = useState({ value: '', error: '' })
+  const dispatch = useDispatch()
 
   const onLoginPressed = () => {
-    // const emailError = emailValidator(email.value)
-    // const passwordError = passwordValidator(password.value)
-    // if (emailError || passwordError) {
-    //   setEmail({ ...email, error: emailError })
-    //   setPassword({ ...password, error: passwordError })
-    //   return
-    // }
+
+    dispatch(userActions.login(email.value, password.value));
+
     navigation.navigate("HomeSreen")
   }
 
+
+  const [user, setUser] = React.useState({});
+  const fields = [{
+    "label": "Tên đăng nhập",
+    "icon": "account",
+    "name": "username"
+  }, {
+    "label": "Mật khẩu",
+    "icon": "eye",
+    "name": "password",
+    "secureTextEntry": true
+  }];
+
+
+  const updateSate = (field, value) => {
+    setUser(current => {
+      return { ...current, [field]: value }
+    });
+  }
+
+
   return (
+
     <Background>
       {/* <BackButton goBack={navigation.goB} /> */}
-      <BackButton goBack={()=>{}} />
-
+      <BackButton goBack={() => { }} />
       <Logo />
       <Header>Welcome back</Header>
       <TextInput
