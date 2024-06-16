@@ -17,6 +17,21 @@ export default function RegisterScreen({ navigation}) {
   const [email, setEmail] = useState({ value: '', error: '' })
   const [password, setPassword] = useState({ value: '', error: '' })
 
+  useEffect(() => {
+    navigation.getParent()?.setOptions({
+      tabBarStyle: {
+        display: 'none'
+      }
+    });
+    return () => {
+      navigation.getParent() ?.setOptions({
+        tabBarStyle: {
+          display: 'flex',
+        }
+      });
+    }
+  }, [])
+
   const onSignUpPressed = () => {
     const nameError = nameValidator(name.value)
     const emailError = emailValidator(email.value)
@@ -78,7 +93,7 @@ export default function RegisterScreen({ navigation}) {
       </Button>
       <View style={styles.row}>
         <Text>Already have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Đăng nhập')}>
+        <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
           <Text style={styles.link}>Login</Text>
         </TouchableOpacity>
       </View>

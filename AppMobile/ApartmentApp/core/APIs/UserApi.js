@@ -1,11 +1,10 @@
 import axios from "axios";
-
-const ENDPOINT = "http://192.168.1.15:8000"
+import { BaseUrl } from "../../config/config";
 
 export const UserApi = {
 
     getToken: function (params) {
-        return axios.post(`${ENDPOINT}/o/token/`,
+        return axios.post(`${BaseUrl}/o/token/`,
             params,
             {
                 headers: {
@@ -16,20 +15,43 @@ export const UserApi = {
     },
 
     getUser: function (token){
-        return axios.get(`${ENDPOINT}/users/current-user/`,{
+        return axios.get(`${BaseUrl}/users/current-user/`,{
             headers: {
                 'Authorization': `Bearer ${token}`,
             }
         })
     },
 
-    uploadAvatar: function (formData){
-        return axios.get(`${ENDPOINT}/users/2/upload_avatar/`,{
+    uploadAvatar: function (id,formData,token){
+        return axios.patch(`${BaseUrl}/residents/${id}/upload_avatar/`,formData,{
             headers: {
                 "Content-Type": "multipart/form-data",
+                'Authorization': `Bearer ${token}`,
             },
-            params:formData
+           
         })
+    },
+
+
+    changePassword: function (params,token) {
+        return axios.patch(`${BaseUrl}/users/update_password/`,
+            params,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            }
+        );
+    },
+    updateInfor: function (id,params,token) {
+        return axios.patch(`${BaseUrl}/residents/${id}/update_infor/`,
+            params,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            }
+        );
     },
 
 };

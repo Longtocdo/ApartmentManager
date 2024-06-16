@@ -6,20 +6,18 @@ import navigation from '../../navigation';
 import { useNavigation } from '@react-navigation/native';
 import { BillApis } from '../../core/APIs/BillAPIs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const a = null;
+import { CabinetAPIs } from '../../core/APIs/CabinetAPIs';
 
 const FirstRoute = () => {
     const navigation = useNavigation();
 
-    const [payedBill, setPayedBill] = React.useState([])
+    const [items, setItems] = React.useState([])
 
-
-    const loadBill = async (status) => {
+    const loadItems = async (status) => {
         const token = await AsyncStorage.getItem('token')
-        console.log(token)
         try {
-            const res = await BillApis.getBill({ 'status': status }, token)
-            setPayedBill(res.data)
+            const res = await CabinetAPIs.getItemByStatus({ status: 'pending' }, token)
+            setItems(res.data)
             console.log(res.data)
         } catch (error) {
             console.log(error)
@@ -27,22 +25,22 @@ const FirstRoute = () => {
     }
 
     React.useEffect(() => {
-        loadBill('unpayed')
+        loadItems()
     }, [])
 
 
     return (
         <ScrollView style={[styles.scene, {}]}>
 
-            {payedBill.map(c =>
-                <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen', { billId: c.id, isPayed: c?.status == "Thành công" ? true : false, paymentMethod: c?.payment_method }) }}>
+            {items.map(c =>
+                <TouchableOpacity onPress={() => { navigation.navigate('ItemDetailScreen', { item:c }) }}>
                     <List.Item
-                        title={c?.fee?.fee_name}
-                        description={`${c?.fee?.created_date ?? '15-02-2024'}\n Chưa thanh toán`}
+                        title={c?.item_name}
+                        description={`${c?.created_date ?? '15-02-2024'}\n Chưa nhận`}
                         style={{}}
 
                         left={props => <List.Icon {...props} icon="bank-transfer" />}
-                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>Thanh toán</Text>}
+                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>Chi tiết</Text>}
                     />
                 </TouchableOpacity>
             )}
@@ -54,42 +52,40 @@ const FirstRoute = () => {
 const SecondRoute = () => {
     const navigation = useNavigation();
 
-    const [payBill, setPayBill] = React.useState([])
+    const [items, setItems] = React.useState([])
 
-
-    const loadBill = async (status) => {
+    const loadItems = async (status) => {
+        const token = await AsyncStorage.getItem('token')
         try {
-            token = await AsyncStorage.getItem('token')
-
-            const res = await BillApis.getBill({ 'status': status }, token)
-            setPayBill(res.data)
+            const res = await CabinetAPIs.getItemByStatus({ status: 'received' }, token)
+            setItems(res.data)
+            console.log(res.data)
         } catch (error) {
             console.log(error)
         }
     }
 
     React.useEffect(() => {
-        loadBill('payed')
+        loadItems()
     }, [])
 
-    return (
-        <ScrollView style={[styles.scene,]}>
 
-            {payBill.map((c) =>
-                <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen', { billId: c.id, isPayed: c?.status == "Thành công" ? true : false, paymentMethod: c?.payment_method }) }}>
+    return (
+        <ScrollView style={[styles.scene, {}]}>
+
+            {items.map(c =>
+                <TouchableOpacity onPress={() => { navigation.navigate('ItemDetailScreen', { item:c }) }}>
                     <List.Item
-                        title={c?.fee?.fee_name}
-                        description={() => (
-                            <View>
-                                <Text >{c?.payment_date}</Text>
-                                <Text style={{ color: 'green' }}>Đã thanh toán</Text>
-                            </View>
-                        )}
+                        title={c?.item_name}
+                        description={`${c?.created_date ?? '15-02-2024'}\n Đã nhận`}
+                        style={{}}
+
                         left={props => <List.Icon {...props} icon="bank-transfer" />}
-                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>{`${c?.fee?.price?.toLocaleString('vi-VN') + 'đ'}`}</Text>}
+                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>Chi tiết</Text>}
                     />
                 </TouchableOpacity>
             )}
+
         </ScrollView>
     )
 };
@@ -98,12 +94,12 @@ const SecondRoute = () => {
 
 
 
-export default class TabViewPayment extends React.Component {
+export default class TabViewCabinet extends React.Component {
     state = {
         index: 0,
         routes: [
-            { key: 'first', title: 'Chưa thanh toán' },
-            { key: 'second', title: 'Đã thanh toán' },
+            { key: 'first', title: 'Hàng chưa nhận' },
+            { key: 'second', title: 'Hàng đã nhận' },
 
         ],
     };
@@ -114,7 +110,7 @@ export default class TabViewPayment extends React.Component {
                 <View style={styles.search}>
                     <ImageBackground source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner.png')} style={styles.image}>
                         <Searchbar
-                            placeholder="Tìm kiếm hóa đơn"
+                            placeholder="Tìm kiếm hàng theo tên"
                             onChangeText={() => { }}
                             value={""}
                             style={{ width: '80%', height: 50 }}

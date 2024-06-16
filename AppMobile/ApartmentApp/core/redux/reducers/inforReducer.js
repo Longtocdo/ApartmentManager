@@ -18,10 +18,12 @@ const initialState = {
     id: '',
     first_name: '',
     last_name: '',
-    username: '  Nguyen Minh Sang',
+    username: 'Nguyen Minh Sang',
     role: '',
     email: '',
     avatar: '',
+    phone:'',
+
 }
 
 export default function actionInforReducer(state = initialState, payload) {
@@ -39,6 +41,8 @@ export default function actionInforReducer(state = initialState, payload) {
                 username: payload?.data?.username ?? state.username,
                 role: payload?.data?.role ?? state.role,
                 email: payload?.data?.email ?? state.email,
+                avatar: payload?.data?.avatar ?? state.avatar,
+                phone: payload?.data?.phone ?? state.phone,
             }
         case LOGOUT:
             return {
@@ -49,6 +53,7 @@ export default function actionInforReducer(state = initialState, payload) {
                 role: '',
                 email: '',
                 avatar: '',
+                phone:'',
             }
         default:
             return state
@@ -62,8 +67,9 @@ export const login = (username, password) => async dispatch => {
             "grant_type": "password",
             "username": username,
             "password": password,
-            "client_id": "WItk43G2WXhYgKd5aYYydNjuxXAnWPgAN83ATDhy",
-            "client_secret": "EeW4ucZ73inoxLIPk8isMHVWJi8tpc0o0Ck4q3zXN0wcqwtD3hcqBHDhk2nbf7s25ycdWWTMgmvV2kiWWRWZpWd8HQdTtxOEsA3DBmdBVUI1loF8OZrEV2GYQPUJhbhO",
+            "client_id":"sTC0ix5fSQ12R6Pa4323TrbWxIPmYA4vLO40CdFv",
+            "client_secret": "NQkMojPVrvjMN0MIoBfEd0bPE9cu1XlShzNgddncNOE9iSm2PesAtP9oNZP50YjkH70VfmL1EQFHCfCo4tAK8yOhjB1nSXB6GN0uE9fASWrYw5xu4kKd4IOmxN1QOQOT"
+            ,
         });
 
         const data = response.data;
@@ -77,10 +83,14 @@ export const login = (username, password) => async dispatch => {
                 type: UPDATE_PROFILE,
                 data: userReponse.data
             })
+
         }, 100)
+        return Promise.resolve(data.access_token)
+        
 
     } catch (error) {
         console.log('Error:', error);
+        return Promise.reject(error);
     }
     finally {
 
