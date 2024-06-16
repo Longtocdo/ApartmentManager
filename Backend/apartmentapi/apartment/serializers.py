@@ -35,7 +35,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'username', 'password', 'role', 'avatar', 'sex']
+        fields = ['id', 'phone', 'first_name', 'last_name', 'email', 'username', 'password', 'role', 'avatar', 'sex',
+                  'is_first_login']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -66,7 +67,7 @@ class ManagerSerializer(serializers.ModelSerializer):
 
 
 class ServiceSerializer(serializers.ModelSerializer):
-    residents = ResidentSerializer(many=True)
+
 
     class Meta:
         model = Service
@@ -75,7 +76,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 class ResidentFeeSerializer(serializers.ModelSerializer):
     resident = ResidentSerializer
-    fee = ServiceSerializer
+    fee = ServiceSerializer()
 
     class Meta:
         model = ResidentFee
@@ -83,7 +84,6 @@ class ResidentFeeSerializer(serializers.ModelSerializer):
 
 
 class ReservationVehicleSerializer(serializers.ModelSerializer):
-    resident = ResidentSerializer
 
     class Meta:
         model = ReservationVehicle
@@ -107,15 +107,15 @@ class ItemSerializer(serializers.ModelSerializer):
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        fields = '__all__'
+        fields = ['id', 'content_choice']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    choices = ChoiceSerializer
+    choices = ChoiceSerializer(many=True)
 
     class Meta:
         model = Question
-        fields = ['content', 'choices']
+        fields = '__all__'
 
 
 class SurveySerializer(serializers.ModelSerializer):
@@ -123,15 +123,6 @@ class SurveySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Survey
-        fields = ['title', 'questions']
-
-
-class ResponseSerializer(serializers.ModelSerializer):
-    survey = SurveySerializer()
-    resident = ResidentSerializer()
-
-    class Meta:
-        model = Response
         fields = '__all__'
 
 
@@ -142,7 +133,29 @@ class AnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = '__all__'
+        fields = ['question', 'choice']
+
+
+class ResponseSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True, write_only=True)
+
+    class Meta:
+        model = Response
+        fields = ['survey', 'resident', 'answers']
+
+    def validate_answers(self, value):
+        # Check for duplicate questions in answers
+        question_ids = [answer['question'].id for answer in value]
+        if len(question_ids) != len(set(question_ids)):
+            raise serializers.ValidationError("Each question must be answered only once.")
+        return value
+
+    def create(self, validated_data):
+        answers_data = validated_data.pop('answers')
+        response = Response.objects.create(**validated_data)
+        for answer_data in answers_data:
+            Answer.objects.create(response=response, **answer_data)
+        return response
 
 
 class ReportSerializer(serializers.ModelSerializer):

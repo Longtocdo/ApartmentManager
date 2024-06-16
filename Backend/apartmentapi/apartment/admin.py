@@ -17,41 +17,53 @@ class ApartmentAdminSite(admin.AdminSite):
     def get_urls(self):
         return [
             path('apartment-stats/', self.stats_view, name='apartment-stats'),
+            path('survey-stats/', self.survey_stats, name='survey-stats'),
         ] + super().get_urls()
 
     def stats_view(self, request):
-        selected_period = request.GET.get('period')
+        selected_period = request.GET.get('period', 'month')
+        group_by = {'month': models.functions.TruncMonth, 'quarter': models.functions.TruncQuarter,
+                    'year': models.functions.TruncYear}.get(selected_period, models.functions.TruncMonth)
 
-        if selected_period:
-            if selected_period == 'month' or selected_period == 'quarter' or selected_period == 'year':
-                if selected_period == 'month':
-                    group_by = 'month'
-                elif selected_period == 'quarter':
-                    group_by = 'quarter'
-                else:
-                    group_by = 'year'
-                stats = Service.objects.annotate(
-                    **{group_by: models.functions.TruncMonth('created_date')}
-                ).values(group_by).annotate(
-                    apartment_count=Count('id')
-                ).order_by(group_by)
+        revenue_stats = ResidentFee.objects.filter(status='Đã đăng ký').annotate(
+            period=group_by('payment_date')
+        ).values('period').annotate(
+            total_revenue=Sum('fee__price')
+        ).order_by('period')
 
-                revenue_stats = Service.objects.annotate(
-                    **{group_by: models.functions.TruncMonth('created_date')}
-                ).values(group_by).annotate(
-                    total_revenue=Sum('price')
-                ).order_by(group_by)
-            else:
-                return TemplateResponse(request, 'admin/stats.html', {'selected_period': selected_period})
-        else:
-            stats = []
-            revenue_stats = []
-
-        return TemplateResponse(request, 'admin/stats.html', {
+        return TemplateResponse(request, 'admin/revenue_stats.html', {
             'period': selected_period,
-            'stats': stats,
             'revenue_stats': revenue_stats,
         })
+
+    def survey_stats(self, request):
+        survey_id = request.GET.get('survey_id', '1')
+        survey = Survey.objects.get(id=survey_id)
+        questions = survey.questions.all()
+        question_stats = []
+        for question in questions:
+            total_responses = Answer.objects.filter(question=question).count()
+            choice_stats = (
+                Answer.objects.filter(question=question)
+                .values('choice__content_choice')
+                .annotate(choice_count=Count('id'))
+                .order_by('choice__content_choice')
+            )
+            for stat in choice_stats:
+                stat['percentage'] = (stat['choice_count'] / total_responses) * 100 if total_responses > 0 else 0
+            question_stats.append({
+                'question': question.content,
+                'stats': choice_stats,
+            })
+
+        surveys = Survey.objects.all()
+
+        context = {
+            'surveys': surveys,
+            'question_stats': question_stats,
+        }
+
+        return TemplateResponse(request, 'admin/survey_stats.html', context)
 
 
 admin_site = ApartmentAdminSite(name='apartment')
@@ -64,7 +76,7 @@ class UserForm(forms.ModelForm):
 
 
 class ResidentAdmin(admin.ModelAdmin):
-    list_display = ['user_info', ]  # Sửa 'user_infor' thành 'user_info'
+    list_display = ['user_info', 'apartment']  # Sửa 'user_infor' thành 'user_info'
     search_fields = ['user_info__first_name', 'user_info__last_name']
 
 
@@ -80,7 +92,6 @@ class ServiceAdmin(admin.ModelAdmin):
 
 
 class ResidentFeeAdmin(admin.ModelAdmin):
-
     list_display = ['payment_method', 'payment_proof', 'payment_date', 'status', 'amount', 'resident',
                     'fee']
     search_fields = ['payment_method', 'resident__user_info__first_name',

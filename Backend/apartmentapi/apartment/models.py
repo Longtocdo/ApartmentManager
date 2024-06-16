@@ -74,13 +74,13 @@ class BaseModel(models.Model):
 
 
 class Service(BaseModel):
-    # doi ten thanh service longpro
     class EnumServiceType(models.TextChoices):
-        Svc1 = 'Tiền Nhà', 'Tiền nhà'
-        Svc2 = 'Tiền Điện', 'Tiền Điện'
+        Svc1 = 'Nha', 'Tiền nhà'
+        Svc2 = 'Dien', 'Tiền điện'
+        Svc3 = 'Dich vu', 'Tiền phí dịch vụ'
 
     fee_name = models.CharField(max_length=30)
-    price = models.IntegerField()
+    price = models.IntegerField(null=True)
     types = models.CharField(max_length=50, choices=EnumServiceType.choices, default=EnumServiceType.Svc1)
 
     residents = models.ManyToManyField(Resident, through='ResidentFee', related_name='service')
@@ -97,7 +97,7 @@ class ResidentFee(models.Model):
     class EnumStatusFee(models.TextChoices):
         PENDING = 'Đang chờ xử lý', 'Đang xử lý'
         DENY = 'Không thể xử lý', 'Thất Bại'
-        DONE = 'Đã đăng ký', 'Thành Công'
+        DONE = 'Thành Công', 'Thành Công'
 
     payment_method = models.CharField(choices=EnumPayment.choices, max_length=50, null=True)
     payment_proof = CloudinaryField(null=True)
@@ -119,6 +119,7 @@ class ReservationVehicle(Service):
         DONE = 'Đã đăng ký', 'Đã đăng ký'
 
     vehicle_number = models.CharField(max_length=10)
+    vehicle_owner = models.CharField(max_length=50)
     status = models.CharField(max_length=50, choices=EnumStatus.choices, default=EnumStatus.PENDING)
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE, null=True, related_name='reservations')
 
@@ -128,7 +129,6 @@ class ReservationVehicle(Service):
 
 class ElectronicLockerItem(BaseModel):
     name = models.CharField(max_length=30, default='Tủ đồ')
-    # longpro
 
     apartment = models.OneToOneField(Apartment, related_name='electronic_locker', null=False, on_delete=models.CASCADE)
 
@@ -148,8 +148,7 @@ class Item(BaseModel):
 
 
 class Survey(BaseModel):
-    title = models.CharField(max_length=30, primary_key=True)
-
+    title = models.CharField(max_length=30)
     data_expire = models.DateField()
     status = models.BooleanField(default=False)
 
@@ -159,8 +158,7 @@ class Survey(BaseModel):
 
 class Question(BaseModel):
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')
-
-    content = models.CharField(max_length=30, primary_key=True)
+    content = models.CharField(max_length=30)
 
     def __str__(self):
         return self.content
@@ -168,8 +166,7 @@ class Question(BaseModel):
 
 class Choice(BaseModel):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
-
-    content_choice = models.CharField(max_length=30, primary_key=True)
+    content_choice = models.CharField(max_length=30)
     letter = models.CharField(max_length=1, help_text="A, B, C, D")
 
     def __str__(self):
@@ -186,7 +183,7 @@ class Response(models.Model):
 
 
 class Answer(models.Model):
-    response = models.ForeignKey(Response, on_delete=models.CASCADE, related_name='answers')
+    response = models.ForeignKey(Response, on_delete=models.CASCADE, related_name='answers', null=True)
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
     choice = models.ForeignKey(Choice, on_delete=models.CASCADE, related_name='answers')
 
@@ -205,7 +202,6 @@ class Report(BaseModel):
         DONE = 'Đã xử lý'
 
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='reflection_forms')
-
     title = models.CharField(max_length=30)
     content = models.TextField(max_length=50, null=True)
     status = models.CharField(max_length=20, choices=EnumStatus.choices, default=EnumStatus.PENDING)

@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-aa$3sc8quxnhel+xv)^gyjje5ez123w3&431*erx19o=d&akid
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.8']  # '192.168.1.74'
+ALLOWED_HOSTS = ['192.168.1.84']  # '192.168.1.74'
 # CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000/', 'https://7f90-171-243-49-67.ngrok-free.app']
 
 import pymysql

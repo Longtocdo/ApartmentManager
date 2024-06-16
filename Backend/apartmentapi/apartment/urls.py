@@ -21,6 +21,8 @@ r.register('answer', views.AnswerViewSet, basename='answer')
 r.register('response', views.ResponseViewSet, basename='response')
 r.register('zalopay', views.ZaloViewSet, basename='zalo')
 r.register('momo',views.MomoViewSet,basename='momo')
+r.register('question', views.QuestionViewSet, basename='question')
+
 
 
 urlpatterns = [

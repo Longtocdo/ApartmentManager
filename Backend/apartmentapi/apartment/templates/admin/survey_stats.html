@@ -1,0 +1,95 @@
+{% extends 'admin/base_site.html' %}
+
+{% block content %}
+<style>
+    .chart-container {
+        max-width: 300px;
+        max-height: 300px;
+        float: left;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+</style>
+<h1>THỐNG KÊ SỐ LƯỢNG MỖI LỰA CHỌN TRONG CÂU TRẢ LỜI TRÊN MỖI BÀI KHẢO SÁT</h1>
+
+<form id="surveyForm" method="GET" target="_top" autocomplete="off">
+    <label for="survey_id">Chọn bài khảo sát:</label>
+    <select id="survey_id" name="survey_id" onchange="this.form.submit()">
+        {% for survey in surveys %}
+        <option value="{{ survey.id }}" {% if survey.id == survey_id %}selected{% endif %}>{{ survey.title }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% for question_stat in question_stats %}
+<div class="chart-container">
+    <h2>{{ question_stat.question }}</h2>
+    <canvas id="responseChart{{ forloop.counter }}"></canvas>
+</div>
+{% endfor %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.getElementById('survey_id').addEventListener('change', function() {
+        window.location.href = window.location.pathname + '?survey_id=' + this.value;
+    });
+
+    window.onload = function() {
+        {% for question_stat in question_stats %}
+        var ctx = document.getElementById('responseChart{{ forloop.counter }}').getContext('2d');
+        var responseLabels = [];
+        var responseValues = [];
+
+        {% for stat in question_stat.stats %}
+        responseLabels.push('{{ stat.choice__content_choice }}');
+        responseValues.push({{ stat.percentage }});
+        {% endfor %}
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: responseLabels,
+                datasets: [{
+                    label: 'Tỉ lệ phần trăm câu trả lời',
+                    data: responseValues,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Biểu đồ thống kê tỉ lệ phần trăm câu trả lời'
+                    }
+                }
+            }
+        });
+        {% endfor %}
+    }
+</script>
+{% endblock %}
