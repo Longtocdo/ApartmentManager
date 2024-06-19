@@ -76,7 +76,7 @@ class UserForm(forms.ModelForm):
 
 
 class ResidentAdmin(admin.ModelAdmin):
-    list_display = ['user_info', 'apartment']  # Sửa 'user_infor' thành 'user_info'
+    list_display = ['user_info', 'apartment']
     search_fields = ['user_info__first_name', 'user_info__last_name']
 
 
@@ -95,7 +95,7 @@ class ResidentFeeAdmin(admin.ModelAdmin):
     list_display = ['payment_method', 'payment_proof', 'payment_date', 'status', 'amount', 'resident',
                     'fee']
     search_fields = ['payment_method', 'resident__user_info__first_name',
-                     'resident__user_info__last_name']  # Sửa 'user_infor' thành 'user_info'
+                     'resident__user_info__last_name']
     list_filter = ['payment_date', 'status', ]
 
 
@@ -118,8 +118,8 @@ class ItemAdmin(admin.ModelAdmin):
 
 
 class SurveyAdmin(admin.ModelAdmin):
-    list_display = ['title', 'data_expire', 'status']  # Sửa 'tittle' thành 'title'
-    search_fields = ['title']  # Sửa 'tittle' thành 'title'
+    list_display = ['title', 'data_expire', 'status']
+    search_fields = ['title']
     list_filter = ['data_expire', 'status']
 
 
@@ -148,8 +148,8 @@ class AnswerAdmin(admin.ModelAdmin):
 
 
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ['resident', 'title', 'content', 'status']  # Sửa 'tittle' thành 'title'
-    search_fields = ['title', 'content']  # Sửa 'tittle' thành 'title'
+    list_display = ['resident', 'title', 'content', 'status']
+    search_fields = ['title', 'content']
     list_filter = ['status']
 
 
@@ -166,9 +166,7 @@ class User_Admin(admin.ModelAdmin):
     forms = UserForm
 
     def save_model(self, request, obj, form, change):
-        # Kiểm tra xem có thay đổi mật khẩu không
         if 'password' in form.changed_data:
-            # Băm mật khẩu mới trước khi lưu
             obj.password = make_password(form.cleaned_data['password'])
         obj.save()
 

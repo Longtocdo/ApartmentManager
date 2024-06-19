@@ -4,7 +4,6 @@ from ckeditor.fields import RichTextField
 from cloudinary.models import CloudinaryField
 from enum import Enum
 from django_enum_choices.fields import EnumChoiceField
-from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.hashers import make_password
 import cloudinary.uploader
 
@@ -81,7 +80,7 @@ class Service(BaseModel):
 
     fee_name = models.CharField(max_length=30)
     price = models.IntegerField(null=True)
-    types = models.CharField(max_length=50, choices=EnumServiceType.choices, default=EnumServiceType.Svc1)
+    types = models.CharField(max_length=50, choices=EnumServiceType.choices, default=EnumServiceType.Svc1, null=True)
 
     residents = models.ManyToManyField(Resident, through='ResidentFee', related_name='service')
 
@@ -195,7 +194,6 @@ class Answer(models.Model):
 
 
 class Report(BaseModel):
-    # doi ten Report
     class EnumStatus(models.TextChoices):
         PENDING = 'Đang chờ xử lý'
         DENY = 'Không thể xử lý'

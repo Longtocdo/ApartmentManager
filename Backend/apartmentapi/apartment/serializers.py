@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from apartment.models import *
-from django.contrib.auth.hashers import make_password
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -11,16 +10,13 @@ class UserSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         avatar_url = representation.get('avatar')
         if avatar_url and avatar_url.startswith('image/upload/'):
-            # Remove 'image/upload/' prefix
             avatar_url = avatar_url.replace('image/upload/', '', 1)
             representation['avatar'] = avatar_url
         return representation
 
     def create(self, validated_data):
-        # Kiểm tra xem có phải là superuser không
         is_superuser = validated_data.pop('is_superuser', False)
 
-        # Băm mật khẩu trước khi tạo người dùng
         if not is_superuser:
             password = validated_data.pop('password', None)
             user = User.objects.create(**validated_data)
@@ -67,8 +63,6 @@ class ManagerSerializer(serializers.ModelSerializer):
 
 
 class ServiceSerializer(serializers.ModelSerializer):
-
-
     class Meta:
         model = Service
         fields = '__all__'
@@ -84,7 +78,6 @@ class ResidentFeeSerializer(serializers.ModelSerializer):
 
 
 class ReservationVehicleSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ReservationVehicle
         fields = '__all__'
@@ -127,10 +120,6 @@ class SurveySerializer(serializers.ModelSerializer):
 
 
 class AnswerSerializer(serializers.ModelSerializer):
-    # response = ResponseSerializer
-    # question = QuestionSerializer
-    # choice = ChoiceSerializer
-
     class Meta:
         model = Answer
         fields = ['question', 'choice']

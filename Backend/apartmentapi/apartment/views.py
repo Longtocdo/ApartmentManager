@@ -1,8 +1,6 @@
 import string
 import urllib
-from django.contrib.auth import authenticate, login
 from rest_framework import viewsets, generics, parsers, permissions
-from rest_framework.decorators import action
 from rest_framework.response import Response as ResponseRest
 from rest_framework.parsers import JSONParser
 from rest_framework import status
@@ -14,6 +12,19 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.shortcuts import get_object_or_404
 import cloudinary.uploader
 from django.utils import timezone
+import json
+import hmac
+import hashlib
+import requests
+import uuid
+import random
+from time import time
+from datetime import datetime
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from apartment.models import ResidentFee
 
 proxies = {
     'http': '',
@@ -72,7 +83,6 @@ class ResidentFeeViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Retrie
 
 class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Resident.objects.all()
-
     serializer_class = serializers.ResidentSerializer
     parser_classes = [parsers.MultiPartParser, JSONParser]
     permission_classes = [permissions.IsAuthenticated]
@@ -88,13 +98,9 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
         bill_status = request.query_params.get('status')
         bill_type = request.query_params.get('type')
         bill_name = request.query_params.get('name')
-
         resident = get_object_or_404(Resident, user_info=user_id)
-
-        # Initialize query
         residentfees = resident.resident_fees.all()
 
-        # Filter by bill status
         if bill_status == "payed":
             residentfees = residentfees.filter(status=ResidentFee.EnumStatusFee.DONE)
         elif bill_status == "unpayed":
@@ -102,13 +108,17 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
         elif bill_status == "deny":
             residentfees = residentfees.filter(status=ResidentFee.EnumStatusFee.DENY)
 
-        # Filter by bill type
         if bill_type:
             residentfees = residentfees.filter(fee__types=bill_type)
 
-        # Filter by bill name
         if bill_name:
             residentfees = residentfees.filter(fee__fee_name__icontains=bill_name)
+
+        paginator = paginators.ServicePaginator()
+        page = paginator.paginate_queryset(residentfees, request)
+        if page is not None:
+            serializer = serializers.ResidentFeeSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         return ResponseRest(serializers.ResidentFeeSerializer(residentfees, many=True).data, status=status.HTTP_200_OK)
 
@@ -201,6 +211,7 @@ class ResidentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveA
         if serializer.is_valid():
             vehicle_data = serializer.validated_data
             vehicle_data['price'] = 50000  # Set the price directly
+            vehicle_data['types'] = Service.EnumServiceType.Svc3
             vehicle_data['resident'] = resident
             vehicle = ReservationVehicle.objects.create(**vehicle_data)
             return ResponseRest(serializers.ReservationVehicleSerializer(vehicle).data, status=status.HTTP_201_CREATED)
@@ -260,7 +271,9 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
     def get_items(self, request):
         user_id = request.user.id
         resident = get_object_or_404(Resident, user_info_id=user_id)
-        items = resident.apartment.electronic_locker.items.all()
+        electronic_locker, created = ElectronicLockerItem.objects.get_or_create(apartment=resident.apartment)
+
+        items = electronic_locker.items.all()
 
         stt = request.query_params.get('status')
         if stt == 'received':
@@ -330,7 +343,6 @@ class ElectronicLockerViewSet(viewsets.ViewSet, generics.ListAPIView):
                 electronic_lock=electronic_locker
             )
 
-            # Send email notification to resident
             subject = 'Notification: New item added to your electronic locker'
             message = f'Hello {new_item.electronic_lock.apartment.resident.user_info.first_name},\n\n'
             message += f'A new item "{new_item.item_name}" has been added to your electronic locker.\n\n'
@@ -450,10 +462,6 @@ class SurveyViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPI
         return ResponseRest(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# @action(methods=['post'], detail=True, url_path=survey_post)
-# def add_survey(self, request, pk):
-#     survey = request.data.get('survey')
-
 class QuestionViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Question.objects.all()
     serializer_class = serializers.QuestionSerializer
@@ -514,8 +522,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
         else:
             return ResponseRest({'detail': 'Invalid old password'}, status=status.HTTP_204_NO_CONTENT)
 
-        # Hàm upload avatar
-
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
     def get_current_user(self, request):
         user = request.user
@@ -537,14 +543,11 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, PermissionRequiredMi
         except User.DoesNotExist:
             return ResponseRest({'detail': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Tạo một mật khẩu mới ngẫu nhiên
         new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
 
-        # Mã hóa mật khẩu mới
         user.password = make_password(new_password)
         user.save()
 
-        # Gửi mật khẩu mới qua email
         send_mail(
             'New Password',
             f'Your new password is: {new_password}',
@@ -572,16 +575,6 @@ class PostViewSet(viewsets.ViewSet, generics.ListAPIView):
     pagination_class = paginators.PostPaginator
 
 
-import hmac
-import hashlib
-import json
-import requests
-import uuid
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
-
-# MOMO
 class MomoViewSet(viewsets.ViewSet):
     serializer_class = serializers.ResidentFeeSerializer
 
@@ -590,7 +583,7 @@ class MomoViewSet(viewsets.ViewSet):
     def process_payment(self, request):
         if request.method == 'POST':
             try:
-                payment_data = request.data  # Sử dụng request.data thay vì json.loads(request.data)
+                payment_data = request.data
                 amount = payment_data.get('price')
                 resident_fee_id = payment_data.get('resident_fee_id')
                 amount = int(amount)
@@ -666,7 +659,7 @@ class MomoViewSet(viewsets.ViewSet):
                         resident_fee.save()
                         return JsonResponse({'message': 'Payment successful and status updated'}, status=200)
                     except ResidentFee.DoesNotExist:
-                        return JsonResponse({'error': 'ResidentFee not found'}, status=404)
+                        return JsonResponse({'error': 'ResidentFee not found'}, status=409)
                 else:
                     return JsonResponse({'error': 'Payment failed'}, status=400)
             except json.JSONDecodeError:
@@ -675,23 +668,7 @@ class MomoViewSet(viewsets.ViewSet):
             return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
-# import hmac
-# import hashlib
 # ZALOPAY
-
-import json
-import hmac
-import hashlib
-import requests
-import uuid
-import random
-from time import time
-from datetime import datetime
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from apartment.models import ResidentFee
 
 config = {
     "appid": 2553,
@@ -702,15 +679,12 @@ config = {
 
 
 class ZaloViewSet(viewsets.ViewSet):
-    # permission_classes = [perms.IsNurse]
 
     @csrf_exempt
     @action(detail=False, methods=['post'], url_path='create', url_name='create_zalo')
     def create_zalo_payment(self, request):
         try:
             resident_fee_id = request.data.get('resident_fee_id')
-
-            # Lấy thông tin ResidentFee từ cơ sở dữ liệu
             try:
                 resident_fee = ResidentFee.objects.get(id=resident_fee_id)
             except ResidentFee.DoesNotExist:
@@ -718,13 +692,11 @@ class ZaloViewSet(viewsets.ViewSet):
 
             amount = resident_fee.fee.price
             transID = random.randrange(1000000)
-            # Cấu hình thông tin đơn hàng
             order = {
                 "app_id": config["appid"],
                 "app_trans_id": "{:%y%m%d}_{}".format(datetime.today(), transID),
-                # mã giao dịch có định dạng yyMMdd_xxxx
                 "app_user": "demo",
-                "app_time": int(round(time() * 1000)),  # milliseconds
+                "app_time": int(round(time() * 1000)),
                 "embed_data": json.dumps({
                     "merchantinfo": "embeddata123"
                 }),
@@ -739,18 +711,15 @@ class ZaloViewSet(viewsets.ViewSet):
                 "bank_code": "zalopayapp"
             }
 
-            # Tạo chuỗi dữ liệu theo định dạng yêu cầu
             data = "{}|{}|{}|{}|{}|{}|{}".format(order["app_id"], order["app_trans_id"], order["app_user"],
                                                  order["amount"], order["app_time"], order["embed_data"], order["item"])
 
-            # Tính toán MAC bằng cách sử dụng HMAC
             order["mac"] = hmac.new(config['key1'].encode(), data.encode(), hashlib.sha256).hexdigest()
 
             response = urllib.request.urlopen(url=config["endpoint"],
                                               data=urllib.parse.urlencode(order).encode())
             result = json.loads(response.read())
 
-            # Trả về kết quả từ API
             if result['return_code'] == 1:
                 resident_fee.status = True
                 resident_fee.save()
@@ -761,9 +730,6 @@ class ZaloViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
-        # coding=utf-8
-        # Python 3.6
 
     @csrf_exempt
     @action(detail=False, methods=['post'], url_path='callback', url_name='create_zalo')
@@ -778,22 +744,17 @@ class ZaloViewSet(viewsets.ViewSet):
             cbdata = request.data
             mac = hmac.new(config['key2'].encode(), cbdata['data'].encode(), hashlib.sha256).hexdigest()
 
-            # kiểm tra callback hợp lệ (đến từ ZaloPay server)
             if mac != cbdata['mac']:
-                # callback không hợp lệ
                 result['return_code'] = -1
                 result['return_message'] = 'mac not equal'
             else:
-                # thanh toán thành công
-                # merchant cập nhật trạng thái cho đơn hàng
                 dataJson = json.loads(cbdata['data'])
                 print("update order's status = success where app_trans_id = " + dataJson['app_trans_id'])
 
                 result['return_code'] = 1
                 result['return_message'] = 'success'
         except Exception as e:
-            result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
+            result['return_code'] = 0
             result[' e'] = str(e)
 
-        # thông báo kết quả cho ZaloPay server
         return JsonResponse(result)
