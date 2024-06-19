@@ -1,21 +1,18 @@
 
 
 import * as React from 'react';
-import { View, ImageBackground, Text, ScrollView, Image, Alert } from 'react-native';
+import { View,  Text, ScrollView,  Alert } from 'react-native';
 import { StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { CabinetAPIs } from '../../core/APIs/CabinetAPIs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-
 export default ItemDetailScreen = ({ navigation }) => {
   const route = useRoute();
   const { item } = route.params;
 
   const confirmPress = async () => {
-
     try {
       const token = await AsyncStorage.getItem('token')
       const res = await CabinetAPIs.setReceivedItem(item.id, token)
@@ -69,7 +66,6 @@ export default ItemDetailScreen = ({ navigation }) => {
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -125,5 +121,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-
 });

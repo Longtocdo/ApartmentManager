@@ -6,6 +6,7 @@ import navigation from '../../navigation';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SurveyAPIs } from '../../core/APIs/SurveyAPIs';
+import { useSelector } from 'react-redux';
 const FirstRoute = () => {
     const navigation = useNavigation();
     const [surveys, setSurveys] = React.useState([])
@@ -14,7 +15,6 @@ const FirstRoute = () => {
         const token = await AsyncStorage.getItem("token")
         try {
             const res = await SurveyAPIs.getSurveyPending(token)
-
             setSurveys(res.data)
         } catch (error) {
             console.log(error)
@@ -40,7 +40,6 @@ const FirstRoute = () => {
                     />
                 </TouchableOpacity>
             )}
-
         </ScrollView>
     )
 
@@ -65,7 +64,6 @@ const SecondRoute = () => {
 
     return (
         <ScrollView style={[styles.scene, {}]}>
-
             {surveys.map(s =>
                 <TouchableOpacity >
                     <List.Item
@@ -78,14 +76,9 @@ const SecondRoute = () => {
                     />
                 </TouchableOpacity>
             )}
-
         </ScrollView>
     )
 };
-
-
-
-
 
 export default class TabViewSurvey extends React.Component {
     state = {

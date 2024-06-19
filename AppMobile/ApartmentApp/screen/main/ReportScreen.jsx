@@ -14,10 +14,8 @@ export default ReportScreen = ({navigation }) => {
 
   const profile = useSelector((state) => state.personalInfor);
 
-
   const [tittle, setTittle] = React.useState('')
   const [content, setContent] = React.useState('')
-
 
   const confirmPress = async () => {
     try {
@@ -35,10 +33,8 @@ export default ReportScreen = ({navigation }) => {
       Alert.alert('Thất bại', 'Gửi phản ánh thất bại')
       console.log(error)
     }
-
-
-
   }
+
   return (
     <ScrollView >
       <View style={styles.container} >
@@ -66,7 +62,6 @@ export default ReportScreen = ({navigation }) => {
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

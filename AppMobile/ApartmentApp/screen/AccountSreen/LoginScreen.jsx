@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react'
 import { TouchableOpacity, StyleSheet, View, Alert } from 'react-native'
-import { Text } from 'react-native-paper'
+import { ActivityIndicator, MD2Colors, Text } from 'react-native-paper'
 import Background from '../../components/Background'
 import Logo from '../../components/Logo'
 import Header from '../../components/Header'
@@ -11,32 +11,34 @@ import { theme } from '../../core/theme'
 import { emailValidator } from '../../helpers/emailValidator'
 import { passwordValidator } from '../../helpers/passwordValidator'
 import { useDispatch, useSelector } from 'react-redux';
-import { userActions } from '../../core/redux/reducers/inforReducer'
+import { UPDATE_PROFILE, userActions } from '../../core/redux/reducers/inforReducer'
 import axios from 'axios'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { auth } from '../../config/firebase'
 import { UserApi } from '../../core/APIs/UserApi'
-import {  getFocusedRouteNameFromRoute, useRoute } from '@react-navigation/native'
+import { getFocusedRouteNameFromRoute, useRoute } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 
 export default function LoginScreen({ navigation }) {
 
-  
-  useEffect(() => {
-    navigation.getParent()?.setOptions({
-      tabBarStyle: {
-        display: 'none'
-      }
-    });
-    return () => {
-      navigation.getParent() ?.setOptions({
-        tabBarStyle: {
-          display: 'flex',
-        }
-      });
-    }
-  }, [])
+
+  // useEffect(() => {
+  //   navigation.getParent()?.setOptions({
+  //     tabBarStyle: {
+  //       display: 'none'
+  //     }
+  //   });
+  //   return () => {
+  //     navigation.getParent()?.setOptions({
+  //       tabBarStyle: {
+  //         display: 'flex',
+  //       }
+  //     });
+  //   }
+  // }, [])
   const profile = useSelector((state) => state.personalInfor);
+  const isLoading = useSelector(state => state.loading.isLoading);
 
   const [email, setEmail] = useState({ value: '', error: '' })
   const [password, setPassword] = useState({ value: '', error: '' })
@@ -45,7 +47,6 @@ export default function LoginScreen({ navigation }) {
   const onLoginPressed = () => {
 
     dispatch(userActions.login(email.value, password.value)).then(async (data) => {
-      console.log("Login success, status code ", data);
 
       const res = await UserApi.getUser(data)
 
@@ -53,7 +54,7 @@ export default function LoginScreen({ navigation }) {
         navigation.navigate('ChangePasswordScreen')
       else {
         if (true) {
-          signInWithEmailAndPassword(auth,res.data.email, res.data.email)
+          signInWithEmailAndPassword(auth, res.data.email, res.data.email)
             .then(() => console.log("Login success firebase"))
             .catch((err) => Alert.alert("Login error", err.message));
         }
@@ -66,30 +67,9 @@ export default function LoginScreen({ navigation }) {
 
 
 
-  const [user, setUser] = React.useState({});
-  const fields = [{
-    "label": "Tên đăng nhập",
-    "icon": "account",
-    "name": "username"
-  }, {
-    "label": "Mật khẩu",
-    "icon": "eye",
-    "name": "password",
-    "secureTextEntry": true
-  }];
-
-
-  const updateSate = (field, value) => {
-    setUser(current => {
-      return { ...current, [field]: value }
-    });
-  }
-
-
   return (
 
     <Background>
-      {/* <BackButton goBack={navigation.goB} /> */}
       <BackButton goBack={() => { }} />
       <Logo />
       <Header>Welcome back</Header>
@@ -130,7 +110,14 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.link}>Sign up</Text>
         </TouchableOpacity>
       </View>
+      
+      {isLoading && (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={MD2Colors.blue500} />
+      </View>
+    )}
     </Background>
+   
   )
 }
 
@@ -152,4 +139,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex:100,
+  }
 })

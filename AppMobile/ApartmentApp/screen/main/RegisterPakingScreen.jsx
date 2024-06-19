@@ -1,38 +1,33 @@
 
 
 import * as React from 'react';
-import { View, ImageBackground, Text, ScrollView, Image, Alert } from 'react-native';
+import { View,  Text, ScrollView,  Alert } from 'react-native';
 import { StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
-import { useRoute } from '@react-navigation/native';
 import TextInput from '../../components/TextInput';
-import { ReportAPIs } from '../../core/APIs/ReportAPIs';
-import { useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { UserApi } from '../../core/APIs/UserApi';
 
 export default RegisterPakingScreen = ({navigation }) => {
 
-  const profile = useSelector((state) => state.personalInfor);
-
-
-  const [tittle, setTittle] = React.useState('')
-  const [content, setContent] = React.useState('')
-
+  const [vehicle, setVehicle] = React.useState('')
+  const [personName, setPersonName] = React.useState('')
 
   const confirmPress = async () => {
     try {
-
       const token = await AsyncStorage.getItem('token')
-      const res = await ReportAPIs.setReport(token, {
-        title: tittle,
-        content: content
-      })
+
+      console.log(token)
+      const res = await UserApi.registerPaking({
+        vehicle_number: vehicle,
+        vehicle_owner: personName,
+      },token)
       if (res.status == 201) {
-        Alert.alert('Thành công', 'Gửi phản ánh thành công')
+        Alert.alert('Thành công', 'Gửi yêu cầu thành công, vui long đợi người quản tri duyệt.')
         navigation.navigate('HomeScreen')
       }
     } catch (error) {
-      Alert.alert('Thất bại', 'Gửi phản ánh thất bại')
+      Alert.alert('Thất bại', 'Gửi đăng ký xe thất bại')
       console.log(error)
     }
   }
@@ -41,29 +36,28 @@ export default RegisterPakingScreen = ({navigation }) => {
       <View style={styles.container} >
         <View >
           <TextInput
-            label="Chủ đề"
+            label="Số xe"
             returnKeyType="next"
-            value={tittle}
-            onChangeText={setTittle}
+            value={vehicle}
+            onChangeText={setVehicle}
             style={styles.input}
           />
           <TextInput
-            label="Nội dung phản ánh"
-            value={content}
-            onChangeText={setContent}
+            label="Tên chủ phương tiện"
+            value={personName}
+            onChangeText={setPersonName}
             multiline={true}
-            numberOfLines={10}
+            numberOfLines={5}
             style={styles.input}
           />
         </View>
         <TouchableOpacity onPress={confirmPress}>
-          <Text style={styles.confirm}>Gửi phản ánh</Text>
+          <Text style={styles.confirm}>Gửi yêu cầu</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -83,7 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'blue',
     color: 'white',
     position: 'relative',
-    top: 380,
+    top: 470,
     right: 0,
     left: 0,
     textAlign: 'center',

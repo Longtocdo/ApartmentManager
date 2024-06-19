@@ -7,7 +7,6 @@ import { StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { useSelector } from 'react-redux'
 import Loading from '../../components/Loading';
-import { auth } from '../../config/firebase';
 
 const Menu = [
   {
@@ -21,13 +20,13 @@ const Menu = [
 
   },
   {
-    name: 'Dịch vụ',
+    name: 'Khảo sát',
     avatar: <Image
       source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\icon-bill.png')}
       style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
       resizeMode="cover"
     />,
-    nav: ""
+    nav: "SurveyScreen"
   }, {
     name: 'Phản ánh',
     avatar: <Image
@@ -76,13 +75,13 @@ const TienIch = [
     nav: 'SurveyScreen'
   },
   {
-    name: 'Hotline',
+    name: 'Đký giữ xe',
     image: <Image
       source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\hotline.png')}
       style={{ width: 38, height: 38, borderRadius: 5, margin: 5 }}
       resizeMode="cover"
     />,
-    nav: ''
+    nav: 'RegisterPakingScreen'
   },
   {
     name: 'Góp ý',
@@ -124,7 +123,7 @@ const TienIch = [
 
 export default HomeScreen = ({ navigation }) => {
 
-  const profile = useSelector((state) => state.personalInfor);
+  const profile = useSelector((state) => state.personalInfor)
 
   return (
     <ScrollView style={styles.container} >
@@ -185,9 +184,6 @@ export default HomeScreen = ({ navigation }) => {
         </View>
         <View>
           <Text style={styles.tittle}>Gợi ý cho bạn </Text>
-          <Button
-            onPress={() => navigation.navigate("Chat", { meID: auth?.currentUser?.email, contactID: 'quanlychungcu@gmail.com' })}
-          >Nhắn với quản lý</Button>
           <View style={styles.tienIch}>
 
             {TienIch.map(c =>
@@ -228,7 +224,6 @@ export default HomeScreen = ({ navigation }) => {
       <Loading />
     </ScrollView>
   )
-
 };
 
 const styles = StyleSheet.create({
@@ -298,8 +293,5 @@ const styles = StyleSheet.create({
   },
   contentArticle: {
     fontSize: 15,
-
   }
-
-
 });

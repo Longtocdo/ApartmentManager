@@ -4,23 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import Constants from "expo-constants";
 // Firebase config
 const firebaseConfig = {
-  apiKey: 'AIzaSyCiKgTkEdpeRPXEy4KYwG9edOdJLDeunRo',
-  authDomain:'demochat-814be.firebaseapp.com' ,
-  projectId: 'demochat-814be',
-  storageBucket: 'demochat-814be.appspot.com',
-  messagingSenderId: '509524374139',
-  appId: '1:509524374139:web:3182bcdde02287938b28de',
-  databaseURL: "https://demochat-814be-default-rtdb.firebaseio.com",
-
-
-  // apiKey: Constants.expoConfig.extra.apiKey,
-  // authDomain: Constants.expoConfig.extra.authDomain,
-  // projectId: Constants.expoConfig.extra.projectId,
-  // storageBucket: Constants.expoConfig.extra.storageBucket,
-  // messagingSenderId: Constants.expoConfig.extra.messagingSenderId,
-  // appId: Constants.expoConfig.extra.appId,
-  // databaseURL: Constants.expoConfig.extra.databaseURL,
-  //   @deprecated is deprecated Constants.manifest
+  apiKey: Constants.expoConfig.extra.apiKey,
+  authDomain: Constants.expoConfig.extra.authDomain,
+  projectId: Constants.expoConfig.extra.projectId,
+  storageBucket: Constants.expoConfig.extra.storageBucket,
+  messagingSenderId: Constants.expoConfig.extra.messagingSenderId,
+  appId: Constants.expoConfig.extra.appId,
+  databaseURL: Constants.expoConfig.extra.databaseURL,
 };
 // initialize firebase
 initializeApp(firebaseConfig);

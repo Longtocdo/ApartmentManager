@@ -4,8 +4,8 @@ import { BaseUrl } from "../../config/config";
 
 export const BillApis = {
 
-    getBill: function (params, token) {
-        return axios.get(`${BaseUrl}/residents/get_residentfees/`,
+    getBill: function (params, token,page=1) {
+        return axios.get(`${BaseUrl}/residents/get_residentfees/?page=${page}`,
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -19,7 +19,7 @@ export const BillApis = {
         return axios.get(`${BaseUrl}/residentfee/${id}`);
     },
 
-    updateProofById: function (id) {
+    updateProofById: function (id,params) {
         return axios.get(`${BaseUrl}/residentfee/${id}/upload_proof`, {
             headers: {
                 "Content-Type": "multipart/form-data",

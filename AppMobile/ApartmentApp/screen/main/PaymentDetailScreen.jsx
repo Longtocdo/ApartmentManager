@@ -1,26 +1,21 @@
 
 
 import * as React from 'react';
-import { View, ImageBackground, Text, ScrollView, Image } from 'react-native';
-import { Appbar, Card, Title, Paragraph, Button, Avatar, List, IconButton } from 'react-native-paper';
+import { View, Text, ScrollView } from 'react-native';
+import { Card, Avatar } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker'
 import { BillApis } from '../../core/APIs/BillAPIs';
 import { useSelector } from 'react-redux';
-
-
+import { Linking } from 'react-native';
 
 export default PaymentDetailScreen = ({ navigation }) => {
   const route = useRoute();
 
-  const profile = useSelector((state) => state.personalInfor);
-
   const { billId, isPayed, paymentMethod } = route.params;
-
   const [bill, setBill] = React.useState({})
-
   const [paymentType, setPaymentType] = React.useState('Chuyển khoản Momo')
 
   const loadBill = async (id) => {
@@ -53,7 +48,6 @@ export default PaymentDetailScreen = ({ navigation }) => {
       setSelectedImage(result.assets[0].uri)
 
       const formData = new FormData();
-      formData.append('id', '1');
       formData.append('avatar', {
         uri: result.assets[0].uri,
         name: 'userProfile.jpg',
@@ -65,21 +59,30 @@ export default PaymentDetailScreen = ({ navigation }) => {
         const res = await BillApis.updateProofById(billId, formData);
 
       } catch (error) {
+        console.log(error)
         console.log('Lỗi upload')
       }
     }
   };
 
-
+  const openURL = async (url) => {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      console.error('Không thể mở URL:', url);
+    }
+  };
 
   const paymentPress = async () => {
-
     const res = await BillApis.paymentBill({
-      "price":bill?.fee?.price,
-      "resident_fee_id":bill?.fee?.id
+      "price": bill?.fee?.price,
+      "resident_fee_id": bill?.fee?.id
     })
 
-    console.log(res.status)
+    if (res.status == 200) {
+      openURL(res.data.payUrl)
+    }
   }
 
   return (
@@ -167,10 +170,8 @@ export default PaymentDetailScreen = ({ navigation }) => {
               <View></View>
               <Text style={styles.content}>{bill.payment_date}</Text>
             </View>
-
           }
           {paymentType == 'Chuyển khoản ngân hàng' &&
-
             <>
               <View style={styles.item}>
                 <Text style={styles.tittle}>Ngân hàng</Text>
@@ -199,16 +200,9 @@ export default PaymentDetailScreen = ({ navigation }) => {
           }
         </>
       }
-
-      {/* <Button onPress={pickImage}>Upload ảnh</Button>
-
-{selectedImage && (
-  <Image source={{ uri: selectedImage }} style={{ width: 200, height: 200 }} />
-)} */}
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -249,7 +243,6 @@ const styles = StyleSheet.create({
     borderColor: 'whitesmoke'
   },
   confirm: {
-
     color: 'white',
     backgroundColor: 'blue',
     textAlign: 'center',
@@ -265,5 +258,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-
 });

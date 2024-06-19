@@ -1,39 +1,33 @@
 import * as React from 'react';
-import { View, StyleSheet, Dimensions, StatusBar, Text, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
-import { Icon, List, Searchbar } from 'react-native-paper';
+import { View, StyleSheet, Dimensions,Text, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
+import {List, Searchbar } from 'react-native-paper';
 import { TabView, SceneMap } from 'react-native-tab-view';
-import navigation from '../../navigation';
 import { useNavigation } from '@react-navigation/native';
 import { BillApis } from '../../core/APIs/BillAPIs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const a = null;
 
 const FirstRoute = () => {
     const navigation = useNavigation();
 
     const [payedBill, setPayedBill] = React.useState([])
 
-
     const loadBill = async (status) => {
-        const token = await AsyncStorage.getItem('token')
-        console.log(token)
         try {
-            const res = await BillApis.getBill({ 'status': status }, token)
-            setPayedBill(res.data)
-            console.log(res.data)
+            const token = await AsyncStorage.getItem('token')
+
+            const res = await BillApis.getBill({ 'status': status }, token,1)
+            setPayedBill(res.data.results)
         } catch (error) {
             console.log(error)
-        }
+        } 
     }
 
     React.useEffect(() => {
         loadBill('unpayed')
     }, [])
 
-
     return (
         <ScrollView style={[styles.scene, {}]}>
-
             {payedBill.map(c =>
                 <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen', { billId: c.id, isPayed: c?.status == "Thành công" ? true : false, paymentMethod: c?.payment_method }) }}>
                     <List.Item
@@ -46,26 +40,25 @@ const FirstRoute = () => {
                     />
                 </TouchableOpacity>
             )}
-
         </ScrollView>
     )
-
 };
+
 const SecondRoute = () => {
     const navigation = useNavigation();
 
     const [payBill, setPayBill] = React.useState([])
 
-
     const loadBill = async (status) => {
         try {
-            token = await AsyncStorage.getItem('token')
 
+            const token = await AsyncStorage.getItem('token')
             const res = await BillApis.getBill({ 'status': status }, token)
-            setPayBill(res.data)
+
+            setPayBill(res.data.results)
         } catch (error) {
             console.log(error)
-        }
+        } 
     }
 
     React.useEffect(() => {
@@ -74,7 +67,6 @@ const SecondRoute = () => {
 
     return (
         <ScrollView style={[styles.scene,]}>
-
             {payBill.map((c) =>
                 <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen', { billId: c.id, isPayed: c?.status == "Thành công" ? true : false, paymentMethod: c?.payment_method }) }}>
                     <List.Item
@@ -94,10 +86,6 @@ const SecondRoute = () => {
     )
 };
 
-
-
-
-
 export default class TabViewPayment extends React.Component {
     state = {
         index: 0,
@@ -108,7 +96,8 @@ export default class TabViewPayment extends React.Component {
         ],
     };
 
-    render() {
+    render(
+    ) {
         return (
             <React.Fragment >
                 <View style={styles.search}>

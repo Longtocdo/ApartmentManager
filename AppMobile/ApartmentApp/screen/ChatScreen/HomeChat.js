@@ -1,40 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { View, TouchableOpacity, Text, Image, StyleSheet, ImageBackground, ScrollView } from "react-native";
+import { View, TouchableOpacity, Text, Image, StyleSheet, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { FontAwesome } from '@expo/vector-icons';
 import colors from '../../colors';
-import { Entypo } from '@expo/vector-icons';
-const catImageUrl = "https://i.guim.co.uk/img/media/26392d05302e02f7bf4eb143bb84c8097d09144b/446_167_3683_2210/master/3683.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=49ed3252c0b2ffb49cf8b508892e452d";
 import { auth, database } from '../../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { Avatar, Badge, Card, List, Searchbar } from "react-native-paper";
+import { Avatar, Badge,  List, Searchbar } from "react-native-paper";
 
 
-const HomeChat = () => {
+export default function HomeChat  ()  {
 
     const navigation = useNavigation();
 
     const [listUsers, setListUsers] = useState([])
-
-    useEffect(() => {
-
-        navigation.setOptions({
-            headerLeft: () => (
-                <FontAwesome name="search" size={24} color={colors.gray} style={{ marginLeft: 15 }} />
-            ),
-            headerRight: () => (
-                <Image
-                    source={{ uri: catImageUrl }}
-                    style={{
-                        width: 40,
-                        height: 40,
-                        marginRight: 15,
-                    }}
-                />
-            ),
-        });
-    }, [navigation]);
-
 
     const getListOfUsersWhoMessagedManager= async () => {
         const messagesRef = collection(database, "whoMessageToManager");
@@ -45,7 +22,6 @@ const HomeChat = () => {
                 listInfor.push({ email: doc.data().email, lastMessage: doc.data().lastMessage, isRead: doc.data().isRead, name: doc.data().name, avatar: doc.data().avatar }); // Thêm email vào danh sách
             }
         });
-        console.log(listInfor)
         setListUsers(listInfor)
     };
 
@@ -62,13 +38,12 @@ const HomeChat = () => {
                             onChangeText={() => { }}
                             value={""}
                             style={{ width: '80%', height: 50 }}
-
                         />
                 </View>
                 <View style={styles.body}>
                     {
                         listUsers.map(u =>
-                            <TouchableOpacity onPress={() => navigation.navigate("Chat", { meID: auth?.currentUser?.email, contactID: u.email })}
+                            <TouchableOpacity onPress={() => navigation.navigate("Chat", { meID: auth?.currentUser?.email, contactID: u.email, nameContact:u?.name })}
                             >
                                 <List.Item
                                     key={u.email}
@@ -89,18 +64,11 @@ const HomeChat = () => {
                         )
                     }
                 </View>
-                <TouchableOpacity
-                    onPress={() => navigation.navigate("Chat", { meID: auth?.currentUser?.email, contactID: 'msang.nms@gmail.com' })}
-                    style={styles.chatButton}
-                >
-                    <Text> Chat với 1</Text>
-                </TouchableOpacity>
             </View>
         </ScrollView>
     );
 };
 
-export default HomeChat;
 
 const styles = StyleSheet.create({
     container: {

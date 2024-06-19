@@ -22,8 +22,8 @@ export const UserApi = {
         })
     },
 
-    uploadAvatar: function (id,formData,token){
-        return axios.patch(`${BaseUrl}/residents/${id}/upload_avatar/`,formData,{
+    uploadAvatar: function (formData,token){
+        return axios.patch(`${BaseUrl}/residents/upload_avatar/`,formData,{
             headers: {
                 "Content-Type": "multipart/form-data",
                 'Authorization': `Bearer ${token}`,
@@ -43,15 +43,25 @@ export const UserApi = {
             }
         );
     },
-    updateInfor: function (id,params,token) {
-        return axios.patch(`${BaseUrl}/residents/${id}/update_infor/`,
-            params,
+    updateInfor: function (params,token) {
+        return axios.patch(`${BaseUrl}/residents/update_infor/`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },params:params
+            }
+        );
+    },
+
+    registerPaking: function (params, token) {
+        return axios.post(`${BaseUrl}/residents/register_vehicle/`, 
+            params, 
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 }
             }
         );
-    },
+}
 
 };

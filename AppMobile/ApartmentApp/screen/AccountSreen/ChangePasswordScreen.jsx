@@ -46,7 +46,7 @@ export default function ChangePasswordScreen({ navigation }) {
       });
 
       try {
-        await UserApi.uploadAvatar(profile.id, formData, token)
+        await UserApi.uploadAvatar( formData, token)
           .then(function (response) {
             console.log(' Upload avatar thanh cong')
           })

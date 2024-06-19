@@ -1,10 +1,12 @@
 
 import * as React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Card, RadioButton } from 'react-native-paper';
+import { ActivityIndicator, Card, MD2Colors, RadioButton } from 'react-native-paper';
 import { useRoute } from '@react-navigation/native';
 import { SurveyAPIs } from '../../core/APIs/SurveyAPIs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch, useSelector } from 'react-redux';
+import { loadingActions } from '../../core/redux/reducers/configReducer';
 
 const MAX_RETRIES = 4;
 
@@ -17,13 +19,19 @@ export default SurveyDetailScreen = ({ navigation }) => {
   const [amountChoices, setAmountChoices] = React.useState(0);
   const [count, setCount] = React.useState(0);
 
+  const dispatch = useDispatch()
+  const isLoading = useSelector(state => state.loading.isLoading);
+
   const [userAnswers, setUserAnswers] = React.useState([]);
 
   const loadSurvey = async () => {
-    let attempts = 0;
+    let attempts = 0; 
 
     while (attempts < MAX_RETRIES) {
       try {
+
+        dispatch(loadingActions.showLoading());
+
         const res = await SurveyAPIs.getSurveyById(surveyId);
         const data = res.data;
         setSurvey(data);
@@ -37,11 +45,11 @@ export default SurveyDetailScreen = ({ navigation }) => {
           break;
         }
         console.warn(`Retrying request (${attempts}/${MAX_RETRIES})...`);
+      }finally{
+        dispatch(loadingActions.hideLoading());
       }
     }
   };
-
-
 
   React.useEffect(() => {
     loadSurvey();
@@ -49,8 +57,6 @@ export default SurveyDetailScreen = ({ navigation }) => {
 
   const postAnwsers = async () => {
     const token = await AsyncStorage.getItem('token')
-
-    console.log(userAnswers)
 
     try {
       const res = await SurveyAPIs.postAnwser(surveyId, { "answers": userAnswers }, token)
@@ -60,16 +66,13 @@ export default SurveyDetailScreen = ({ navigation }) => {
     }
   }
 
-
-
   const nextOrFinishPress = async () => {
     if (choiceValue) {
       setCount(count + 1);
-      setChoiceValue(null); // Reset choiceValue
+      setChoiceValue(null); 
     } else {
       Alert.alert("Chú ý", 'Vui lòng chọn một lựa chọn trước khi tiếp tục!')
     }
-
 
     if (count == amountChoices - 1) {
       postAnwsers();
@@ -78,8 +81,6 @@ export default SurveyDetailScreen = ({ navigation }) => {
     }
 
   };
-
-
 
   const handleAnswerChange = (question, choice) => {
     setUserAnswers(prevAnswers => {
@@ -96,7 +97,6 @@ export default SurveyDetailScreen = ({ navigation }) => {
     });
     setChoiceValue(choice);
   };
-
 
   return (
     <ScrollView >
@@ -135,6 +135,11 @@ export default SurveyDetailScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       </View>
+      {isLoading && (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={MD2Colors.blue500} />
+                </View>
+            )}
     </ScrollView>
   );
 };
@@ -182,5 +187,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'blue',
     color: 'white', padding: 13,
     borderRadius: 10,
-  }
+  }, loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+},
 });

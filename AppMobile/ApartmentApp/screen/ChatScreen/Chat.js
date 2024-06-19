@@ -20,48 +20,43 @@ import { auth, database } from '../../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
 import colors from '../../colors';
+import { useSelector } from 'react-redux';
+import { IconButton } from 'react-native-paper';
 
 
 export default function Chat() {
 
   const route = useRoute();
-  const { meID ,contactID} = route.params;
-  const formatEmail = (email="") => email.replace(/\./g, '_');
+  const userRole = useSelector(state => state.personalInfor.role);
+  const { meID = auth.currentUser.email, contactID = 'quanlychungcu@gmail.com', nameContact } = route.params || {};
+  const formatEmail = (email = "") => email.replace(/\./g, '_');
   const [messages, setMessages] = useState([]);
   const navigation = useNavigation();
   const [chatId, setChatId] = useState('')
 
-  const onSignOut = () => {
-    signOut(auth).catch(error => console.log('Error logging out: ', error));
-  };
-
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          style={{
-            marginRight: 10
-          }}
-          onPress={onSignOut}
-        >
-          <AntDesign name="logout" size={24} color={colors.gray} style={{ marginRight: 10 }} />
-        </TouchableOpacity>
-      )
+      title: userRole == 'Cư Dân' ? 'Quản lý chung cư' : nameContact,
+      headerLeft: () => (
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={() => userRole == 'Cư Dân'?navigation.goBack():navigation.navigate('HomeChat')}
+        />
+      ),
     });
   }, [navigation]);
 
-  
 
+  useEffect(() => {
+    console.log(contactID,meID,nameContact)
+  }, [])
   useLayoutEffect(() => {
     const chat = formatEmail(meID) < formatEmail(contactID) ? `${formatEmail(meID)}-${formatEmail(contactID)}` : `${formatEmail(contactID)}-${formatEmail(meID)}`;
-    console.log('sdfsadfs')
-    
-    console.log(chat)
-    setChatId(chat)
-  
+
     const collectionRef = collection(database, chat);
     const q = query(collectionRef, orderBy('createdAt', 'desc'));
-  
+
     const unsubscribe = onSnapshot(q, querySnapshot => {
       console.log('querySnapshot unsusbscribe');
       setMessages(
@@ -75,16 +70,16 @@ export default function Chat() {
     });
     return unsubscribe;
   }, []); // Thay đổi dependency array để chỉ bao gồm chatId
-  
 
-  const addDocToWhoMessagetoAdmin = async (messageContent='None') => {
-    const docRef = doc(database, "whoMessageToManager", auth?.currentUser?.email); 
+
+  const addDocToWhoMessagetoAdmin = async (messageContent = 'None') => {
+    const docRef = doc(database, "whoMessageToManager", auth?.currentUser?.email);
     await setDoc(docRef, {
       email: auth?.currentUser?.email,
       isRead: true,
       lastMessage: messageContent,
-      avatar:auth?.currentUser?.photoURL??'Undefined avatar',
-      name:auth?.currentUser?.displayName??'Undefined name',
+      avatar: auth?.currentUser?.photoURL ?? 'Undefined avatar',
+      name: auth?.currentUser?.displayName ?? 'Undefined name',
 
     }, { merge: true });
   }
@@ -103,15 +98,11 @@ export default function Chat() {
       user
     });
 
-    addDocToWhoMessagetoAdmin('xinchao')
+    addDocToWhoMessagetoAdmin(text);
   }, []);
 
   return (
-    // <>
-    //   {messages.map(message => (
-    //     <Text key={message._id}>{message.text}</Text>
-    //   ))}
-    // </>
+   
     <GiftedChat
       messages={messages}
       showAvatarForEveryMessage={false}
@@ -126,7 +117,7 @@ export default function Chat() {
       }}
       user={{
         _id: auth?.currentUser?.email,
-        avatar: 'https://i.pravatar.cc/300'
+        avatar: auth?.currentUser?.photoURL
       }}
     />
   );

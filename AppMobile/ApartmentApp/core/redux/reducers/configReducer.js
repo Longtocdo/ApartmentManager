@@ -1,50 +1,32 @@
-import { UserApi } from "../../APIs/UserApi";
-
-
-
-export const UPDATE_NOTIFY = 'Update notify';
-export const UPDADATE_LOADING = 'Update loading';
-
-
 const initialState = {
-    notifyAmount : 0,
-    isLoading : false,
-}
-
-export default function actionConfigReducer(state = initialState, payload) {
-    switch (payload.type) {
-        case UPDATE_NOTIFY:
-            return {
-                ...state,
-                notifyAmount: payload.data.notifyAmount,
-            }
-        case UPDADATE_LOADING:
-            return {
-                ...state,
-                isLoading:payload.data.isLoading
-            }
-        default:
-            return state
+    isLoading: false,
+  };
+  
+  const loadingReducer = (state = initialState, action) => {
+    switch (action.type) {
+      case 'SHOW_LOADING':
+        return { ...state, isLoading: true };
+      case 'HIDE_LOADING':
+        return { ...state, isLoading: false };
+      default:
+        return state;
     }
-
-}
-
-export const setLoading = (isLoading) => async dispatch => {
-try {
-    dispatch({
-        type:UPDADATE_LOADING,
-        data:isLoading,
-    })
-    
-} catch (error) {
-    
-}
-}
+  };
+  
+  export default loadingReducer;
 
 
 
+  export const showLoading = () => ({
+    type: 'SHOW_LOADING',
+  });
+  
+  export const hideLoading = () => ({
+    type: 'HIDE_LOADING',
+  });
 
 
-export const configActions = {
-    setLoading,
+  export const loadingActions = {
+    showLoading,
+    hideLoading
 };

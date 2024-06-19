@@ -56,7 +56,7 @@ export default AccountDetailSreen = ({ navigation }) => {
         const token = await AsyncStorage.getItem('token');
         try {
 
-            const res = await UserApi.updateInfor(profile.id, userInfor, token)
+            const res = await UserApi.updateInfor(userInfor, token)
             if (res.status == 200) {
                 Alert.alert("Đã cập nhật thông tin thành công", "Thành công")
                 navigation.navigate('Tài khoản')

@@ -1,10 +1,8 @@
 import * as React from 'react';
 import { View, StyleSheet, Dimensions, StatusBar, Text, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
-import { Icon, List, Searchbar } from 'react-native-paper';
+import { List, Searchbar } from 'react-native-paper';
 import { TabView, SceneMap } from 'react-native-tab-view';
-import navigation from '../../navigation';
 import { useNavigation } from '@react-navigation/native';
-import { BillApis } from '../../core/APIs/BillAPIs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CabinetAPIs } from '../../core/APIs/CabinetAPIs';
 
@@ -28,10 +26,8 @@ const FirstRoute = () => {
         loadItems()
     }, [])
 
-
     return (
         <ScrollView style={[styles.scene, {}]}>
-
             {items.map(c =>
                 <TouchableOpacity onPress={() => { navigation.navigate('ItemDetailScreen', { item:c }) }}>
                     <List.Item
@@ -44,14 +40,12 @@ const FirstRoute = () => {
                     />
                 </TouchableOpacity>
             )}
-
         </ScrollView>
     )
-
 };
+
 const SecondRoute = () => {
     const navigation = useNavigation();
-
     const [items, setItems] = React.useState([])
 
     const loadItems = async (status) => {
@@ -69,10 +63,8 @@ const SecondRoute = () => {
         loadItems()
     }, [])
 
-
     return (
         <ScrollView style={[styles.scene, {}]}>
-
             {items.map(c =>
                 <TouchableOpacity onPress={() => { navigation.navigate('ItemDetailScreen', { item:c }) }}>
                     <List.Item
@@ -85,14 +77,9 @@ const SecondRoute = () => {
                     />
                 </TouchableOpacity>
             )}
-
         </ScrollView>
     )
 };
-
-
-
-
 
 export default class TabViewCabinet extends React.Component {
     state = {

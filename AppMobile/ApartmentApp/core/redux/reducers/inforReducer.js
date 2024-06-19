@@ -1,8 +1,9 @@
 import axios from "axios";
 import { UserApi, ENDPOINT } from "../../APIs/UserApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { hideLoading, showLoading } from "./configReducer";
 
-
+import Constants from 'expo-constants';
 
 export const UPDATE_PROFILE = 'Update profile';
 export const UPDATE_USERNAME = 'Update username';
@@ -63,13 +64,15 @@ export default function actionInforReducer(state = initialState, payload) {
 
 export const login = (username, password) => async dispatch => {
     try {
+        dispatch(showLoading());
+
         const response = await UserApi.getToken({
             "grant_type": "password",
             "username": username,
             "password": password,
-            "client_id":"sTC0ix5fSQ12R6Pa4323TrbWxIPmYA4vLO40CdFv",
-            "client_secret": "NQkMojPVrvjMN0MIoBfEd0bPE9cu1XlShzNgddncNOE9iSm2PesAtP9oNZP50YjkH70VfmL1EQFHCfCo4tAK8yOhjB1nSXB6GN0uE9fASWrYw5xu4kKd4IOmxN1QOQOT"
-            ,
+          
+            "client_id":Constants.expoConfig.extra.clientId,
+            "client_secret":Constants.expoConfig.extra.clientSecret
         });
 
         const data = response.data;
@@ -93,6 +96,7 @@ export const login = (username, password) => async dispatch => {
         return Promise.reject(error);
     }
     finally {
+        dispatch(hideLoading());
 
     }
 };
