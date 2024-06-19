@@ -1,31 +1,35 @@
 import axios from "axios";
+import { BaseUrl } from "../../config/config";
 
-const ENDPOINT = "http://192.168.1.15:8000"
 
 export const BillApis = {
 
-    getBill: function (params={}, token) {
-        return axios.get(`${ENDPOINT}/residents/get_residentfees/`,
-      
+    getBill: function (params, token) {
+        return axios.get(`${BaseUrl}/residents/get_residentfees/`,
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
-                params:params,
+                params: params
             }
         );
     },
 
-    getBillById: function (id,params) {
-        return axios.get(`${ENDPOINT}/residentfee/${id}`,null);
+    getBillById: function (id) {
+        return axios.get(`${BaseUrl}/residentfee/${id}`);
     },
 
     updateProofById: function (id) {
-        return axios.get(`${ENDPOINT}/residentfee/${id}/upload_proof`,{
+        return axios.get(`${BaseUrl}/residentfee/${id}/upload_proof`, {
             headers: {
                 "Content-Type": "multipart/form-data",
-              },
-            params:params
+            },
+            params: params
         });
+    },
+
+    paymentBill: function (params) {
+        return axios.post(`${BaseUrl}/momo/process_payment/`, params
+        );
     },
 };

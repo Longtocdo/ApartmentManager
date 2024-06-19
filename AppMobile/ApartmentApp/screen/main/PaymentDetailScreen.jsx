@@ -8,18 +8,22 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { BillApis } from '../../core/APIs/BillAPIs';
+import { useSelector } from 'react-redux';
 
 
 
 export default PaymentDetailScreen = ({ navigation }) => {
   const route = useRoute();
+
+  const profile = useSelector((state) => state.personalInfor);
+
   const { billId, isPayed, paymentMethod } = route.params;
-  
+
   const [bill, setBill] = React.useState({})
 
-  const [paymentType, setPaymentType] = React.useState('Chuyển khoản ngân hàng')
+  const [paymentType, setPaymentType] = React.useState('Chuyển khoản Momo')
 
-  const loadBill = async(id) => {
+  const loadBill = async (id) => {
     try {
       const res = await BillApis.getBillById(id)
       setBill(res.data)
@@ -30,10 +34,8 @@ export default PaymentDetailScreen = ({ navigation }) => {
   }
 
   React.useEffect(() => {
-    loadBill(billId??undefined);
-
-    // setPaymentType(paymentMethod??"Momo")
-  },[])
+    loadBill(billId ?? undefined);
+  }, [])
 
   const [selectedImage, setSelectedImage] = React.useState(null);
 
@@ -51,7 +53,7 @@ export default PaymentDetailScreen = ({ navigation }) => {
       setSelectedImage(result.assets[0].uri)
 
       const formData = new FormData();
-      formData.append('id', '1'); 
+      formData.append('id', '1');
       formData.append('avatar', {
         uri: result.assets[0].uri,
         name: 'userProfile.jpg',
@@ -61,12 +63,24 @@ export default PaymentDetailScreen = ({ navigation }) => {
       try {
 
         const res = await BillApis.updateProofById(billId, formData);
-        
+
       } catch (error) {
         console.log('Lỗi upload')
       }
     }
   };
+
+
+
+  const paymentPress = async () => {
+
+    const res = await BillApis.paymentBill({
+      "price":bill?.fee?.price,
+      "resident_fee_id":bill?.fee?.id
+    })
+
+    console.log(res.status)
+  }
 
   return (
     <ScrollView style={styles.container} >
@@ -175,7 +189,7 @@ export default PaymentDetailScreen = ({ navigation }) => {
       {!isPayed &&
         <>
           {paymentType !== 'Chuyển khoản ngân hàng' ?
-            <TouchableOpacity>
+            <TouchableOpacity onPress={paymentPress}>
               <Text style={styles.confirm}>Xác nhận</Text>
             </TouchableOpacity> :
 
@@ -186,7 +200,7 @@ export default PaymentDetailScreen = ({ navigation }) => {
         </>
       }
 
-{/* <Button onPress={pickImage}>Upload ảnh</Button>
+      {/* <Button onPress={pickImage}>Upload ảnh</Button>
 
 {selectedImage && (
   <Image source={{ uri: selectedImage }} style={{ width: 200, height: 200 }} />
@@ -235,7 +249,7 @@ const styles = StyleSheet.create({
     borderColor: 'whitesmoke'
   },
   confirm: {
-    
+
     color: 'white',
     backgroundColor: 'blue',
     textAlign: 'center',
@@ -244,11 +258,11 @@ const styles = StyleSheet.create({
     marginTop: 25,
     borderRadius: 15,
   },
-  tittle:{
+  tittle: {
     fontSize: 16
   },
-  content:{
-    fontSize: 16, 
+  content: {
+    fontSize: 16,
     fontWeight: '700',
   },
 

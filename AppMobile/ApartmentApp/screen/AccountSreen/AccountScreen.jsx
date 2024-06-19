@@ -1,71 +1,61 @@
 import * as React from 'react';
 import { View, ImageBackground, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { Appbar, Card, Title, Paragraph, Button, Avatar, List, IconButton } from 'react-native-paper';
+import { Appbar, Card, Title, Paragraph, Button, Avatar, List, IconButton, Modal, TextInput } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { userActions } from '../../core/redux/reducers/inforReducer';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-const SETTING = [
-    {
-        icon: 'credit-card',
-        name: '',
-    }
-]
+import * as ImagePicker from 'expo-image-picker'
+import { UserApi } from '../../core/APIs/UserApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 export default AccountSreen = ({ navigation }) => {
 
+    const profile = useSelector((state) => state.personalInfor);
     const dispatch = useDispatch();
     const logoutOnPress = async () => {
-        await dispatch(userActions.logout())
-
-        navigation.navigate('Đăng nhập')
+        dispatch(userActions.logout())
+        navigation.navigate('LoginScreen')
     }
-    const [selectedImage, setSelectedImage] = React.useState(null);
 
     const pickImage = async () => {
+
+        const token = await AsyncStorage.getItem('token');
+
+        console.log(token)
         let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 1,
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
         });
-    
-        if (!result.cancelled) {
-          console.log('Đường dẫn hình ảnh:', result.assets[0].uri);
-    
-          setSelectedImage(result.assets[0].uri)
-    
-          const formData = new FormData();
-          formData.append('id', '1'); // Thay thế '123' bằng giá trị id thực tế
-          formData.append('avatar', {
-            uri: result.assets[0].uri,
-            name: 'userProfile.jpg',
-            type: 'image/jpge',
-          });
-    
-          try {
-            await axios.post("https://longtocdo107.pythonanywhere.com/users/5/upload_avatar/", formData, {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }).then(function (response) {
-              //handle success
-              console.log('Thanh cong')
-              console.log(response);
-            })
-              .catch(function (response) {
-                console.log('That bai')
-                //handle error
-                console.log(response);
-              });;
-    
-          } catch (error) {
-            console.log('Lỗi upload')
-          }
+
+        if (!result.canceled) {
+            console.log('Đường dẫn hình ảnh:', result.assets[0].uri);
+
+            const formData = new FormData();
+            formData.append('id', '1'); //TODO
+            formData.append('avatar', {
+                uri: result.assets[0].uri,
+                name: 'userProfile.jpg',
+                type: 'image/jpge',
+            });
+
+            try {
+                await UserApi.uploadAvatar(profile.id, formData, token)
+                    .then(function (response) {
+                        console.log(' Upload avatar thanh cong')
+                    })
+                    .catch(function (response) {
+                        console.log('Upload avatar that bai')
+                    });;
+
+            } catch (error) {
+                console.log('Lỗi upload')
+            }
         }
-      };
+    };
 
     return (
         <ScrollView style={styles.container} >
@@ -73,24 +63,23 @@ export default AccountSreen = ({ navigation }) => {
                 <View style={styles.containerAvatar}>
                     <Avatar.Image
                         size={80}
-                        source={{ uri: selectedImage }}
+                        source={{ uri: profile.avatar }}
                         style={styles.avatar}
                     />
                     <Button
-                    icon={() => (
-                        <Icon 
-                          name="pencil" 
-                          size={35} 
-                          color="purple" 
-                        />
-                      )}
-                        onPress={() => console.log('Edit button pressed')}
+                        icon={() => (
+                            <Icon
+                                name="pencil"
+                                size={35}
+                                color="purple"
+                            />
+                        )}
+                        onPress={pickImage}
                         style={styles.button}
                     >
                     </Button>
                 </View>
-                <Text style={styles.username}>Lê Văn Hiếu</Text>
-                <Text>hieu@gmail.com</Text>
+                <Text style={styles.username}>{profile.first_name + " " + profile.last_name}</Text>
 
             </View>
             <View style={styles.body}>
@@ -125,7 +114,6 @@ export default AccountSreen = ({ navigation }) => {
                             <Button>Xem thêm</Button>
                         </TouchableOpacity>
                     </View>
-
                 </View>
 
                 <View style={styles.settingItem}>
@@ -167,7 +155,6 @@ const styles = StyleSheet.create({
     },
     body: {
         backgroundColor: '#f0f5f7',
-        marginTop: -15,
         borderRadius: 15,
         padding: 15,
         paddingTop: 15
@@ -203,15 +190,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-      },
-      avatar: {
-        position:'relative',
+    },
+    avatar: {
+        position: 'relative',
         marginBottom: 10,
-      },
-      button: {
-        position:'absolute',
-        left:35,
-        bottom:12,
-        fontSize:30
-      },
+    },
+    button: {
+        position: 'absolute',
+        left: 35,
+        bottom: 12,
+        fontSize: 30
+    },
 });

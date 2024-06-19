@@ -1,12 +1,65 @@
-import { useNavigation } from '@react-navigation/native';
 import * as React from 'react';
 import { View, StyleSheet, Dimensions, StatusBar, Text, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
 import { Icon, List, Searchbar } from 'react-native-paper';
 import { TabView, SceneMap } from 'react-native-tab-view';
-const a = null;
+import navigation from '../../navigation';
+import { useNavigation } from '@react-navigation/native';
+import { BillApis } from '../../core/APIs/BillAPIs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FirstRoute = () => {
+const FirstRoute = ({ searchKW }) => {
+    const navigation = useNavigation();
 
+    const [payedBill, setPayedBill] = React.useState([])
+
+    const [debouncedSearchKW, setDebouncedSearchKW] = useState(searchKW);
+
+    const updateDebouncedSearchKW = useCallback(debounce((text) => {
+        setDebouncedSearchKW(text);
+      }, 500), []);
+
+      useEffect(() => {
+        updateDebouncedSearchKW(searchKW);
+      }, [searchKW]);
+
+    const loadBill = async (status, type, searchKW) => {
+        const token = await AsyncStorage.getItem('token')
+        console.log(token)
+        try {
+            const res = await BillApis.getBill({ 'status': status, 'type': type, 'name': searchKW }, token)
+            setPayedBill(res.data)
+            console.log(res.data)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    useEffect(() => {
+        if (debouncedSearchKW) {
+          loadBill('Tiền Điện', 'payed', debouncedSearchKW);
+        }
+      }, [debouncedSearchKW]);
+
+
+    return (
+        <ScrollView style={[styles.scene, {}]}>
+            {payedBill.map(c =>
+                <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen', { billId: c.id, isPayed: c?.status, paymentMethod: c?.payment_method }) }}>
+                    <List.Item
+                        title={c?.fee?.fee_name}
+                        description={`${c?.fee?.created_date ?? '15-02-2024'}\n Chưa thanh toán`}
+                        style={{}}
+
+                        left={props => <List.Icon {...props} icon="bank-transfer" />}
+                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>Thanh toán</Text>}
+                    />
+                </TouchableOpacity>
+            )}
+        </ScrollView>
+    )
+
+};
+const SecondRoute = ({ searchKW }) => {
     const navigation = useNavigation();
 
     const [payBill, setPayBill] = React.useState([])
@@ -27,11 +80,12 @@ const FirstRoute = () => {
         loadBill()
     }, [])
 
+
     return (
         <ScrollView style={[styles.scene, {}]}>
 
             {payBill.map((c) =>
-                <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen',{billId:c.id, isPayed:c?.status, paymentMethod:c?.payment_method}) }}>
+                <TouchableOpacity onPress={() => { navigation.navigate('PaymentDetailScreen', { billId: c.id, isPayed: c?.status, paymentMethod: c?.payment_method }) }}>
                     <List.Item
                         title={c?.fee?.fee_name}
                         description={() => (
@@ -41,284 +95,41 @@ const FirstRoute = () => {
                             </View>
                         )}
                         left={props => <List.Icon {...props} icon="bank-transfer" />}
-                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>{`${c?.fee?.price.toLocaleString('vi-VN') + 'đ'}`}</Text>}
+                        right={props => <Text style={{ alignSelf: 'center', color: 'blue', marginRight: 16, fontSize: 16, fontWeight: '700' }}>{`${c?.fee?.price?.toLocaleString('vi-VN') + 'đ'}`}</Text>}
                     />
                 </TouchableOpacity>
             )}
         </ScrollView>
     )
-
-
 };
-    
 
 
-const SecondRoute = () => (
-    <ScrollView style={[styles.scene, {}]}>
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-
-    </ScrollView>
-
-);
-
-const ThurstRoute = () => (
-    <ScrollView style={[styles.scene, {}]}>
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-
-    </ScrollView>
-
-);
 
 
-const FourthRoute = () => (
-    <ScrollView style={[styles.scene, {}]}>
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-        <List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        /><List.Item
-            title="Thanh toán tiền điện Tháng 7"
-            description={`15-02-2003 20:21\n ${a == null ? 'Thất bại' : 'Thành công'}`}
-
-            left={props => <List.Icon {...props} icon="bank-transfer" />}
-            right={props => <Text style={{ alignSelf: 'center', marginRight: 16, fontSize: 16, fontWeight: '700' }}> -100.000đ</Text>}
-        />
-
-    </ScrollView>
-
-);
-
-export default class TabViewExample extends React.Component {
+export default class TabViewHistory extends React.Component {
     state = {
         index: 0,
         routes: [
-            { key: 'first', title: 'Tất cả' },
-            { key: 'second', title: 'Điện' },
-            { key: 'thurst', title: 'Nước' },
-            { key: 'fourth', title: 'Dịch vụ' },
+            { key: 'first', title: 'Điện' },
+            { key: 'second', title: 'Nước' },
+
         ],
+        searchKW:'',
+    };
+
+    handleSearchChange = (searchKW) => {
+        this.setState({ searchKW });
     };
 
     render() {
         return (
-            <React.Fragment style={styles.container}>
+            <React.Fragment >
                 <View style={styles.search}>
                     <ImageBackground source={require('E:\\OU\\LapTrinhHienDai\\ApartmentManager\\AppMobile\\ApartmentApp\\assets\\banner.png')} style={styles.image}>
                         <Searchbar
-                            placeholder="Search"
-                            onChangeText={() => { }}
-                            value={"sdaf"}
+                            placeholder="Tìm kiếm hóa đơn đã thanh toán"
+                            onChangeText={this.handleSearchChange}
+                            value={this.state.searchKW}
                             style={{ width: '80%', height: 50 }}
 
                         />
@@ -327,10 +138,9 @@ export default class TabViewExample extends React.Component {
                 <TabView
                     navigationState={this.state}
                     renderScene={SceneMap({
-                        first: FirstRoute,
-                        second: SecondRoute,
-                        thurst: ThurstRoute,
-                        fourth: FourthRoute,
+                        first: () => <FirstRoute searchKW={this.state.searchKW} />,
+                        second: () => <SecondRoute searchKW={this.state.searchKW} />,
+
                     })}
                     onIndexChange={index => this.setState({ index })}
                     initialLayout={{ width: Dimensions.get('window').width }}
